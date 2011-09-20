@@ -1,4 +1,4 @@
-#include "http.c"
+#include "http.h"
 
 #define SERVERNAME "webserver"
 
@@ -77,3 +77,21 @@ Close( int sockfd )
 }
 
 
+int 
+init( long address, int port )
+{
+   
+   int listenfd;
+   SAI servaddr; 
+
+   listenfd = Socket( AF_INET, SOCK_STREAM , 0 );
+   
+   bzero( &servaddr, sizeof(servaddr) );
+   servaddr.sin_family = AF_INET;
+   servaddr.sin_addr.s_addr = htonl( address );
+   servaddr.sin_port = htons( port );
+
+   Bind( listenfd, (SA *) &servaddr, sizeof( servaddr ) ); 
+
+   return listenfd;
+}
