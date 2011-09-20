@@ -11,9 +11,12 @@ main( int argc, char **argv )
 
 
    listenfd = init( INADDR_ANY, "9999", 33 );
-   
 
-  
+   for( ; ; ) {
+     
+       handlereqsgl( listenfd );
+
+   }
 
    return EXIT_SUCCESS;
 }

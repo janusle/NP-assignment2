@@ -99,9 +99,20 @@ init( char *host, char *port , int backlog )
 
    Listen( listenfd, backlog );  
  
-
    return listenfd;
 }
 
 
+void
+handlereqsgl( int listenfd,  )
+{
+   int connfd, len;
+   SAI cliaddr;
+   
+   len = sizeof( cliaddr );
+   connfd = Accept( listenfd, (SA*) &cliaddr, &len );
+
+   
+
+}
 
