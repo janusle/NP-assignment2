@@ -78,20 +78,30 @@ Close( int sockfd )
 
 
 int 
-init( long address, int port )
+init( char *host, char *port , int backlog )
 {
    
    int listenfd;
-   SAI servaddr; 
+   AR hints, *res;
+
+   bzero( &hints, sizeof(hints) );
+   hints.ai_family = AF_INET;
+   hints.ai_socktype = SOCK_STREAM;
+ 
+   if( getaddrinfo( host, port, &hints, &res ) != 0 )
+   {
+      err_quit( PNAME );
+   }
 
    listenfd = Socket( AF_INET, SOCK_STREAM , 0 );
    
-   bzero( &servaddr, sizeof(servaddr) );
-   servaddr.sin_family = AF_INET;
-   servaddr.sin_addr.s_addr = htonl( address );
-   servaddr.sin_port = htons( port );
+   Bind( listenfd , res->ai_addr, res->ai_addrlen );
 
-   Bind( listenfd, (SA *) &servaddr, sizeof( servaddr ) ); 
+   Listen( listenfd, backlog );  
+ 
 
    return listenfd;
 }
+
+
+
