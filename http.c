@@ -103,16 +103,69 @@ init( char *host, char *port , int backlog )
 }
 
 
-void
-handlereqsgl( int listenfd,  )
+static char*
+gettime()
 {
-   int connfd, len;
+   static char str[TIMELEN];  
+   time_t timer;
+
+   timer = time(NULL);
+   strftime( str, TIMELEN, "%d/%m/%Y %H:%M:%S " , localtime(&timer) );
+   
+   return str;
+}
+
+static void
+dolog()
+{
+   
+
+}
+
+static void
+handlereq( int connfd )
+{
+  int n;
+  char buffer[ BUFFERLEN ];
+
+  do{
+    n = read( connfd, buffer, BUFFERLEN );
+  }
+  while( n < 0 && errno == EINTR );
+  
+  if( n < 0 )
+      err_quit( PNAME );
+  
+  write( 2, buffer, n );
+}
+
+
+void
+handlereqsgl( int listenfd, int logged )
+{
+   int connfd, len, n;
    SAI cliaddr;
+   char log[ LOGLEN ], buf[ TMPLEN ], addr[ INET_ADDRSTRLEN ]; 
    
    len = sizeof( cliaddr );
    connfd = Accept( listenfd, (SA*) &cliaddr, &len );
 
+   strcpy( log, gettime() );
+   inet_ntop( AF_INET, &cliaddr.sin_addr, addr, TMPLEN );
+
+   sprintf( buf, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
+   strcat( log, buf );                        
+
+   fprintf(stderr, "%s\n ", log );
    
+   handlereq( connfd );
+
+   if( logged )
+   {
+       
+   }
+   
+   Close( connfd );
 
 }
 

@@ -6,12 +6,17 @@
 #include<netinet/in.h>
 #include<arpa/inet.h>
 #include<unistd.h>
+#include<string.h>
 #include<strings.h>
+#include<time.h>
 
 #include "error.h"
 
 #define PNAME "single-server"
-
+#define TIMELEN 50
+#define LOGLEN 200
+#define TMPLEN 300
+#define BUFFERLEN 2048
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
 typedef struct addrinfo AR;

@@ -10,11 +10,11 @@ main( int argc, char **argv )
    /* read config here */
 
 
-   listenfd = init( INADDR_ANY, "9999", 33 );
+   listenfd = init( INADDR_ANY, "11256", 3 );
 
    for( ; ; ) {
      
-       handlereqsgl( listenfd );
+       handlereqsgl( listenfd, 1 );
 
    }
 
