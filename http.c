@@ -378,9 +378,25 @@ genheader( int code, size_t length )
     {
        strcpy( header, "HTTP1.1 404 Not Found\r\n" );  
     }
+
+    if( code == 403 )
+    {
+       strcpy( header, "HTTP1.1 403 Forbidden\r\n" );  
+    }
+
+    if( code == 400 )
+    {
+       strcpy( header, "HTTP1.1 400 Bad Request\r\n" );  
+    }
+
+    if( code == 501 )
+    {
+       strcpy( header, "HTTP1.1 501 Not Implemented\r\n" );  
+    }
+
     if( code == 200 )
     {
-            
+       strcpy( header, "HTTP1.1 200 OK\r\n" );  
     }
 
     strcat( header, "Connection: close\r\n" );
@@ -411,6 +427,14 @@ response( int connfd ,int code, int fp , char info[][TMPLEN] )
    if( code == 404 )
    {     
      fp = open( "404.html", O_RDONLY );
+     if( fp < 0 )
+       return false;
+
+   }
+
+   if( code == 403 )
+   {     
+     fp = open( "403.html", O_RDONLY );
      if( fp < 0 )
        return false;
 
