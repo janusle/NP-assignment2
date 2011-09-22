@@ -5,12 +5,14 @@
 #include<sys/socket.h>
 #include<netinet/in.h>
 #include<arpa/inet.h>
+#include<sys/stat.h>
 #include<unistd.h>
 #include<string.h>
 #include<strings.h>
 #include<stdlib.h>
 #include<time.h>
 #include<ctype.h>
+#include<fcntl.h>
 #include "error.h"
 
 #define PNAME "single-server"
@@ -32,6 +34,7 @@
 #define LOG 6
 #define RD 7
 
+#define HEADERSIZ 1000
 #define METHODLEN 300
 #define HOSTLEN 5
 #define GETLEN 3

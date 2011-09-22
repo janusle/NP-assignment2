@@ -262,7 +262,6 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
        strcmp( info[VERSION], "HTTP/1.1" ) != 0 )
      return 400; 
 
-
    tmp = strtok(NULL, "\r\n");
    while( tmp != NULL )
    {
@@ -289,20 +288,86 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
      return 400;
 
  
-   
-
    return 0;
+}
+
+
+static long 
+getfilesize( int fd )
+{
+   long size;
+
+   /*
+   if( fseek( fp, 0, SEEK_END ) <0 )
+     return -1;
+   
+   size = ftell( fp );
+   if( size < 0 ) 
+     return -1;
+
+   if ( fseek( fp, 0, SEEK_SET ) <0 )
+     return -1;
+ 
+   return size;
+   */
+}
+
+
+static char*
+genheader( int code )
+{
+    static char header[ HEADERSIZ ]; 
+    time_t timer;
+
+    if( code == 404 )
+    {
+       strcpy( header, "HTTP1.1 404 Not Found\r\n" );  
+    }
+    if( code == 200 )
+    {
+            
+    }
+
+    strcat( header, "Connection: close\r\n" );
+    strcat( header, "Content-Length: 0\r\n" );
+    strcat( header, "Server: myserver\r\n" );
+    strcat( header, "Date: " );
+    strcat( header, asctime(localtime(&timer)) );
+    strcat( header, "\r\n\r\n" );
+    return header; 
+}
+
+
+static int 
+response( int connfd ,int code, int fp )
+{
+   long size;
+   char *header;
+
+   header = genheader( code ); 
+   write( connfd, header, strlen(header) ); 
+   if( code == 200 )
+   {
+     /* get size of file */
+     size = getfilesize( fp );
+     if( size < 0 )
+       return false;
+
+   }
+
+
+
 }
 
 
 /* handle request (general version) */
 static int
 handlereq( int connfd , int logged, int recording, 
-           char config[CONFLEN][CONFSIZE] , char* log )
+           char config[CONFLEN][CONFSIZE] , char info[][TMPLEN] )
 {
   int n, code;
-  char buffer[ BUFFERLEN ], info[INFOLEN][TMPLEN] ;
-  
+  char buffer[ BUFFERLEN ], address[ TMPLEN ];
+  int fp;  
 
   /* read request */
   do{
@@ -314,14 +379,36 @@ handlereq( int connfd , int logged, int recording,
       return false;
  
   buffer[n] = '\0';
+  /* parse header */
   code = parseheader( buffer, n , config, info );
 
   if( code != 0 )
-    printf("%d\n", code );
+  {
 
+     strcpy( address, config[ROOT] );
+     strcat( address, info[URL] );
+     fp = open( address, O_RDONLY );
+      
+     /* 403 or 404 */
+     if( fp < 0 )
+     {
+        if( errno == EACCES )
+         response( connfd , 403, -1 );      
+        else
+         response( connfd, 404, -1 );
+     }
+     /* 
+     if( response( connfd, 200, fp ) == false )
+        return false;
+        */
+  }
+
+  /*for test*/
   printf("%s %s\n\n\n", info[URL], info[VERSION] );
 
   write( 2, buffer, n );
+
+  return true;
 }
 
 
@@ -333,8 +420,7 @@ handlereqsgl( int listenfd, int logged, int recording,
    int connfd, len, n, err;
    SAI cliaddr;
    char log[ LOGLEN ], cliinfo[ TMPLEN ], addr[ INET_ADDRSTRLEN ], acptime[ TIMELEN ] ,
-        clstime[ TIMELEN ], repinfo[ INFOSIZ ]; 
-
+        clstime[ TIMELEN ], repinfo[ INFOSIZ ] ,info[INFOLEN][TMPLEN] ;
    err = 0;
    len = sizeof( cliaddr );
    connfd = Accept( listenfd, (SA*) &cliaddr, &len );
@@ -343,7 +429,7 @@ handlereqsgl( int listenfd, int logged, int recording,
    strcpy( acptime, getdatetime() );
  
    /* handle request , if fail to do , return */
-   if ( handlereq( connfd , logged, recording, config, log ) == false )
+   if ( handlereq( connfd , logged, recording, config, info ) == false )
      err = errno; 
 
    Close( connfd );
