@@ -143,6 +143,23 @@ gettime()
 }
 
 
+static char*
+getrptime()
+{
+  static char str[TIMELEN];
+  int tail;
+  time_t timer;
+
+  timer = time(NULL);
+  strcpy( str, asctime( localtime(&timer)) ); 
+ 
+  /* cut the newline in the end of string */
+  tail = strlen( str );
+  str[tail-1] = '\0';
+
+  return str;
+}
+
 
 static void
 upperline( char* st, int len )
@@ -167,7 +184,6 @@ lowerline( char* st, int len )
   }
 
 }
-
 
 
 static int
@@ -357,7 +373,6 @@ genheader( int code, size_t length )
 {
     static char header[ HEADERSIZ ]; 
     char tmp[ TMPLEN ];
-    time_t timer;
 
     if( code == 404 )
     {
@@ -374,8 +389,10 @@ genheader( int code, size_t length )
     strcat( header, tmp);
 
     strcat( header, "Server: myserver\r\n" );
+
     strcat( header, "Date: " );
-    strcat( header, asctime(localtime(&timer)) );
+    strcat( header, getrptime() );
+
     strcat( header, "\r\n\r\n" );
     /* for test */
     fprintf(stderr, "%s\n", header);
@@ -537,11 +554,11 @@ handlereqsgl( int listenfd, int logged, int recording,
    sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
 
    /* generate log */ 
-   sprintf( log, "%s %s %s %s %s %s %d", acptime, clstime, cliinfo, 
+   sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
             info[URL], info[STATUS], info[CONTENTLEN], err ); 
 
    /* for test */
-   fprintf(stderr, "%s\n ", log );
+   fprintf(stderr, "%s", log );
 
    if( logged )
    {
