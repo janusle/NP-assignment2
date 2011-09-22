@@ -7,6 +7,14 @@ main( int argc, char **argv )
    SAI cliaddr;
    int listenfd;
    int len;
+   char config[ CONFLEN ][ CONFSIZE ];
+
+   /* for test */
+   strcpy( config[ ROOT ], "htdocs" );
+   strcpy( config[ HOST ], "www.rmit.edu.au" );
+   strcpy( config[ LOG ] , "web.log" );
+   strcpy( config[ RD ] , "lastrequest.txt" );
+
    /* read config here */
 
 
@@ -14,7 +22,7 @@ main( int argc, char **argv )
 
    for( ; ; ) {
      
-       handlereqsgl( listenfd, 1 );
+       handlereqsgl( listenfd, 1 , 1, config );
 
    }
 

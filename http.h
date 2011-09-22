@@ -8,8 +8,9 @@
 #include<unistd.h>
 #include<string.h>
 #include<strings.h>
+#include<stdlib.h>
 #include<time.h>
-
+#include<ctype.h>
 #include "error.h"
 
 #define PNAME "single-server"
@@ -17,9 +18,28 @@
 #define LOGLEN 200
 #define TMPLEN 300
 #define BUFFERLEN 2048
+#define INFOSIZ 2048
+#define CONFLEN 8
+#define INFOLEN 3
+#define CONFSIZE 50
+
+#define PORT 0
+#define HOST 1
+#define ROOT 2
+#define SDSIG 3
+#define SDFILE 4
+#define STAT 5
+#define LOG 6
+#define RD 7
+
+#define METHODLEN 300
+#define GETLEN 3
+#define URL 0
+#define VERSION 1
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
 typedef struct addrinfo AR;
+
 
 /*wrapper function*/
 
@@ -35,8 +55,14 @@ pid_t Fork( void );
 
 void Close( int sockfd );
 
+void *Malloc( size_t size );
+
 /* initializing functions */
 int init( char *host, char *port, int backlog );
+
+/* handlers */
+void handlereqsgl(int listenfd, int logged, int recording, 
+                  char config[][CONFSIZE]);
 
 
 #endif
