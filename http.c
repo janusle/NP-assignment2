@@ -340,21 +340,15 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
 static long 
 getfilesize( int fd )
 {
-   long size;
+   size_t size;
+   struct stat buf;
 
-   /*
-   if( fseek( fp, 0, SEEK_END ) <0 )
-     return -1;
-   
-   size = ftell( fp );
-   if( size < 0 ) 
-     return -1;
+   if ( fstat( fd, &buf ) < 0 )
+     size = -1;
 
-   if ( fseek( fp, 0, SEEK_SET ) <0 )
-     return -1;
- 
+   size = buf.st_size; 
+  
    return size;
-   */
 }
 
 
@@ -383,34 +377,69 @@ genheader( int code, size_t length )
     strcat( header, "Date: " );
     strcat( header, asctime(localtime(&timer)) );
     strcat( header, "\r\n\r\n" );
-    fprintf("%s\n", header);
+    /* for test */
+    fprintf(stderr, "%s\n", header);
     return header; 
 }
 
 
 static int 
-response( int connfd ,int code, int fp )
+response( int connfd ,int code, int fp , char info[][TMPLEN] )
 {
-   long size;
+   int n;
    char *header;
+   size_t length = 0, left;
+   char buffer[ FILEBUF ];
 
    if( code == 404 )
-   {
-
-
-   }
-   if( code == 200 )
-   {
-     /* get size of file */
-     size = getfilesize( fp );
-     if( size < 0 )
+   {     
+     fp = open( "404.html", O_RDONLY );
+     if( fp < 0 )
        return false;
 
    }
 
+   if( code == 400 )
+   {     
+     fp = open( "400.html", O_RDONLY );
+     if( fp < 0 )
+       return false;
+
+   }
+ 
+   if( code == 501 )
+   {     
+     fp = open( "501.html", O_RDONLY );
+     if( fp < 0 )
+       return false;
+
+   }
+
+   /* get size of file */
+   length = getfilesize( fp );
+   if( length < 0 )
+     return false;
+
+   /* record content-length */
+   sprintf( info[CONTENTLEN], "%ld", length );
+
    /* send header */
-   header = genheader( code ); 
+   header = genheader( code, length ); 
    write( connfd, header, strlen(header) ); 
+ 
+
+   /* send content */
+   left = length;
+   while( left > 0 ){
+      n = read( fp, buffer, FILEBUF );
+      if( n == 0 )
+        break;
+      write( connfd, buffer, n );
+      left -= n;    
+   }
+
+
+   close( fp );
 }
 
 
@@ -449,27 +478,28 @@ handlereq( int connfd , int logged, int recording,
         if( errno == EACCES )
         {
           strcpy(info[STATUS], "403");
-          result = response( connfd , 403, INVALID );      
+          result = response( connfd , 403, INVALID, info );      
         }
         else
         {
           strcpy(info[STATUS], "404");
-          result = response( connfd, 404, INVALID );
+          result = response( connfd, 404, INVALID, info );
         }
      }
-     
-     strcpy(info[STATUS], "200");
-     result = response( connfd, 200, fp );
-
+     else
+     {
+       strcpy(info[STATUS], "200");
+       result = response( connfd, 200, fp, info );
+     }
   }
   else
   {
-     result = response( connfd, code, INVALID );
+     result = response( connfd, code, INVALID, info );
   }
   
 
   /*for test*/
-  printf("%s %s\n\n\n", info[URL], info[VERSION] );
+  /*printf("%s %s\n\n\n", info[URL], info[VERSION] );*/
   
   /*
   write( 2, buffer, n );
@@ -498,7 +528,7 @@ handlereqsgl( int listenfd, int logged, int recording,
    if ( handlereq( connfd , logged, recording, config, info ) == false )
      err = errno; 
 
-   Close( connfd );
+   close( connfd );
 
    /* record closed time */
    strcpy( clstime, gettime() );
@@ -507,7 +537,7 @@ handlereqsgl( int listenfd, int logged, int recording,
    sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
 
    /* generate log */ 
-   sprintf( log, "%s %s %s %s %d", acptime, clstime, cliinfo, 
+   sprintf( log, "%s %s %s %s %s %s %d", acptime, clstime, cliinfo, 
             info[URL], info[STATUS], info[CONTENTLEN], err ); 
 
    /* for test */

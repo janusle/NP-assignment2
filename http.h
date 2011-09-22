@@ -35,6 +35,7 @@
 #define LOG 6
 #define RD 7
 
+#define FILEBUF 1000
 #define HEADERSIZ 1000
 #define METHODLEN 300
 #define HOSTLEN 5
@@ -43,6 +44,8 @@
 #define VERSION 1
 #define CONTENTLEN 3
 #define STATUS 4
+
+
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
 typedef struct addrinfo AR;
