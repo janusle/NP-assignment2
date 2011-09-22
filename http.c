@@ -179,13 +179,18 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
 
    /* if buf size is 0 , then return code 400 bad request */
    if( buf == NULL || size == 0 )
+   {
+     strcpy( info[STATUS], "400" );
      return 400; 
-
+   }
    /* get the first line */
    tmp = strtok( buf, "\r\n" );
 
    if( tmp == NULL )
+   {
+     strcpy( info[STATUS], "400" );
      return 400;
+   }
 
    strcpy( line, tmp );
    len = strlen( line ); 
@@ -200,33 +205,60 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
    upperline( tmp, strlen(tmp) );
    /* request does not be implemented */ 
    if( strncmp( tmp, "POST", strlen("POST") ) == 0 )
+   {
+     strcpy( info[STATUS], "501" );
      return 501;
-  
-   if( strncmp( tmp, "HEAD", strlen("HEAD") ) == 0 )
-     return 501;
+   }
 
-   if( strncmp( tmp, "TRACE", strlen("TRACE") ) == 0 )
+   if( strncmp( tmp, "HEAD", strlen("HEAD") ) == 0 )
+   {
+     strcpy( info[STATUS], "501" );
      return 501;
-  
+   }
+
+   if( strncmp( tmp, "TRACE", strlen("TRACE") ) == 0 ) 
+   {
+     strcpy( info[STATUS], "501" );
+     return 501;
+   }
+
    if( strncmp( tmp, "PUT", strlen("PUT") ) == 0 )
+   {
+     strcpy( info[STATUS], "501" );
      return 501;
+   }
 
    if( strncmp( tmp, "DELETE", strlen("DELETE") ) == 0 )
+   {
+     strcpy( info[STATUS], "501" );
      return 501;
+   }
   
    if( strncmp( tmp, "OPTIONS", strlen("OPTIONS") ) == 0 )
+   {
+     strcpy( info[STATUS], "501" );
      return 501;
+   }
    
    if( strncmp( tmp, "CONNECT", strlen("CONNECT") ) == 0 )
+   {
+     strcpy( info[STATUS], "501" );
      return 501;
+   }
 
    if( strncmp( tmp, "PATCH", strlen("PATCH") ) == 0 )
+   {
+     strcpy( info[STATUS], "501" );
      return 501;
+   }
 
    /* request cannot be regnoized , bad request returns */
    if( strncmp( tmp, "GET", strlen("PATCH") ) != 0 )
+   {
+     strcpy( info[STATUS], "400" );
      return 400; 
- 
+   }
+
    free(tmp);
 
    /* skip 'method' and space */
@@ -234,7 +266,10 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
    ; 
 
    if( i >= len )
-     return 400;
+   {
+     strcpy( info[STATUS], "400" );
+     return 400; 
+   }
 
    for(j=0; i<len && !isspace( line[i] ); i++, j++)
    {
@@ -247,7 +282,10 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
    ; 
   
    if( i >= len )
-     return 400;
+   {
+     strcpy( info[STATUS], "400" );
+     return 400; 
+   }
 
    for(j=0; i<len && !isspace( line[i] ); i++, j++ )
    {
@@ -260,7 +298,10 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
    /* version is invalid */
    if( strcmp( info[VERSION], "HTTP/1.0" ) != 0 &&
        strcmp( info[VERSION], "HTTP/1.1" ) != 0 )
+   {
+     strcpy( info[STATUS], "400" );
      return 400; 
+   }
 
    tmp = strtok(NULL, "\r\n");
    while( tmp != NULL )
@@ -278,15 +319,19 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
        /* compare host */
        upperline( config[HOST], strlen(config[HOST]) ); 
        if( strstr( tmp, config[HOST] ) == NULL )
-         return 305;
-      
+       { 
+         strcpy( info[STATUS], "305" );
+         return 305; 
+       }
    }
 
    /* HTTP/1.1 must has Host header */
    if( tmp == NULL && 
        strcmp( info[VERSION], "HTTP/1.1" ) == 0 )
-     return 400;
-
+   {
+       strcpy( info[STATUS], "400" );
+       return 400; 
+   }
  
    return 0;
 }
@@ -314,9 +359,10 @@ getfilesize( int fd )
 
 
 static char*
-genheader( int code )
+genheader( int code, size_t length )
 {
     static char header[ HEADERSIZ ]; 
+    char tmp[ TMPLEN ];
     time_t timer;
 
     if( code == 404 )
@@ -329,11 +375,15 @@ genheader( int code )
     }
 
     strcat( header, "Connection: close\r\n" );
-    strcat( header, "Content-Length: 0\r\n" );
+
+    sprintf( tmp, "Content-Length: %ld\r\n", length );
+    strcat( header, tmp);
+
     strcat( header, "Server: myserver\r\n" );
     strcat( header, "Date: " );
     strcat( header, asctime(localtime(&timer)) );
     strcat( header, "\r\n\r\n" );
+    fprintf("%s\n", header);
     return header; 
 }
 
@@ -344,8 +394,11 @@ response( int connfd ,int code, int fp )
    long size;
    char *header;
 
-   header = genheader( code ); 
-   write( connfd, header, strlen(header) ); 
+   if( code == 404 )
+   {
+
+
+   }
    if( code == 200 )
    {
      /* get size of file */
@@ -355,8 +408,9 @@ response( int connfd ,int code, int fp )
 
    }
 
-
-
+   /* send header */
+   header = genheader( code ); 
+   write( connfd, header, strlen(header) ); 
 }
 
 
@@ -365,7 +419,7 @@ static int
 handlereq( int connfd , int logged, int recording, 
            char config[CONFLEN][CONFSIZE] , char info[][TMPLEN] )
 {
-  int n, code;
+  int n, code, result;
   char buffer[ BUFFERLEN ], address[ TMPLEN ];
   int fp;  
 
@@ -382,7 +436,7 @@ handlereq( int connfd , int logged, int recording,
   /* parse header */
   code = parseheader( buffer, n , config, info );
 
-  if( code != 0 )
+  if( code == 0 )
   {
 
      strcpy( address, config[ROOT] );
@@ -393,22 +447,34 @@ handlereq( int connfd , int logged, int recording,
      if( fp < 0 )
      {
         if( errno == EACCES )
-         response( connfd , 403, -1 );      
+        {
+          strcpy(info[STATUS], "403");
+          result = response( connfd , 403, INVALID );      
+        }
         else
-         response( connfd, 404, -1 );
+        {
+          strcpy(info[STATUS], "404");
+          result = response( connfd, 404, INVALID );
+        }
      }
-     /* 
-     if( response( connfd, 200, fp ) == false )
-        return false;
-        */
+     
+     strcpy(info[STATUS], "200");
+     result = response( connfd, 200, fp );
+
   }
+  else
+  {
+     result = response( connfd, code, INVALID );
+  }
+  
 
   /*for test*/
   printf("%s %s\n\n\n", info[URL], info[VERSION] );
-
+  
+  /*
   write( 2, buffer, n );
-
-  return true;
+  */
+  return result;
 }
 
 
@@ -441,7 +507,8 @@ handlereqsgl( int listenfd, int logged, int recording,
    sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
 
    /* generate log */ 
-   sprintf( log, "%s %s %s %d", acptime, clstime, cliinfo, err ); 
+   sprintf( log, "%s %s %s %s %d", acptime, clstime, cliinfo, 
+            info[URL], info[STATUS], info[CONTENTLEN], err ); 
 
    /* for test */
    fprintf(stderr, "%s\n ", log );

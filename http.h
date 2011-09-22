@@ -22,9 +22,10 @@
 #define BUFFERLEN 2048
 #define INFOSIZ 2048
 #define CONFLEN 8
-#define INFOLEN 3
+#define INFOLEN 4
 #define CONFSIZE 50
 
+#define INVALID -1
 #define PORT 0
 #define HOST 1
 #define ROOT 2
@@ -40,6 +41,8 @@
 #define GETLEN 3
 #define URL 0
 #define VERSION 1
+#define CONTENTLEN 3
+#define STATUS 4
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
 typedef struct addrinfo AR;
