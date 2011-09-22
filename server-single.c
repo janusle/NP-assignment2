@@ -11,7 +11,7 @@ main( int argc, char **argv )
 
    /* for test */
    strcpy( config[ ROOT ], "htdocs" );
-   strcpy( config[ HOST ], "www.rmit.edu.au" );
+   strcpy( config[ HOST ], "localhost" );
    strcpy( config[ LOG ] , "web.log" );
    strcpy( config[ RD ] , "lastrequest.txt" );
 

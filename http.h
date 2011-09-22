@@ -33,6 +33,7 @@
 #define RD 7
 
 #define METHODLEN 300
+#define HOSTLEN 5
 #define GETLEN 3
 #define URL 0
 #define VERSION 1

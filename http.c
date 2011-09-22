@@ -171,7 +171,8 @@ lowerline( char* st, int len )
 
 
 static int
-parseheader( char* buf, int size , char info[][TMPLEN] )
+parseheader( char* buf, int size , char config[][CONFSIZE],
+             char info[][TMPLEN] )
 {
    char line[ BUFFERLEN ], *tmp ;
    int i, j, len;
@@ -224,9 +225,10 @@ parseheader( char* buf, int size , char info[][TMPLEN] )
 
    /* request cannot be regnoized , bad request returns */
    if( strncmp( tmp, "GET", strlen("PATCH") ) != 0 )
-     return 400;
+     return 400; 
  
-   
+   free(tmp);
+
    /* skip 'method' and space */
    for( i=GETLEN; i<len && isspace( line[i] ); i++ )
    ; 
@@ -254,15 +256,46 @@ parseheader( char* buf, int size , char info[][TMPLEN] )
    info[VERSION][j] = '\0';
   
    upperline( info[VERSION], strlen(info[VERSION]) );
+  
    /* version is invalid */
    if( strcmp( info[VERSION], "HTTP/1.0" ) != 0 &&
        strcmp( info[VERSION], "HTTP/1.1" ) != 0 )
      return 400; 
+
+
+   tmp = strtok(NULL, "\r\n");
+   while( tmp != NULL )
+   {
+       upperline( tmp, strlen(tmp) );
+       if( strstr( tmp, "HOST:" ) != NULL )
+         break; 
+
+       tmp = strtok(NULL, "\r\n");
+   }
+
+
+   if( tmp != NULL )
+   {
+       /* compare host */
+       upperline( config[HOST], strlen(config[HOST]) ); 
+       if( strstr( tmp, config[HOST] ) == NULL )
+         return 305;
+      
+   }
+
+   /* HTTP/1.1 must has Host header */
+   if( tmp == NULL && 
+       strcmp( info[VERSION], "HTTP/1.1" ) == 0 )
+     return 400;
+
+ 
    
+
    return 0;
 }
 
 
+/* handle request (general version) */
 static int
 handlereq( int connfd , int logged, int recording, 
            char config[CONFLEN][CONFSIZE] , char* log )
@@ -281,7 +314,10 @@ handlereq( int connfd , int logged, int recording,
       return false;
  
   buffer[n] = '\0';
-  code = parseheader( buffer, n , info );
+  code = parseheader( buffer, n , config, info );
+
+  if( code != 0 )
+    printf("%d\n", code );
 
   printf("%s %s\n\n\n", info[URL], info[VERSION] );
 
