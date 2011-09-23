@@ -18,7 +18,7 @@ main( int argc, char **argv )
    /* read config here */
 
 
-   listenfd = init( INADDR_ANY, "11256", 3 );
+   listenfd = init( "localhost", "11256", 3 );
 
    for( ; ; ) {
      
