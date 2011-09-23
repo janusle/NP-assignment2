@@ -367,64 +367,117 @@ getfilesize( int fd )
 }
 
 
+/* get content type */
 static char*
-genheader( int code, size_t length )
+gettype( char* url, char config[][CONFSIZE] )
+{
+   int len, i;
+   char tmp[ TMPLEN ];
+
+   len = strlen( url );
+   
+   for( i=len-1; i>=0 && url[i] != '.'; i-- )
+       ;
+
+   /* No extension found */
+   if( i<0 )
+     return config[DEFAULT];
+
+   strcpy( tmp, &url[i+1] );
+   upperline( tmp , strlen(tmp) );
+   
+   if( strcmp( tmp, "TXT" ) == 0 ){
+      return config[TXT];
+   }
+   else if( strcmp( tmp, "HTM" ) == 0 ){
+      return config[HTM];
+   }
+   else if( strcmp( tmp, "HTML" ) == 0 ){
+      return config[HTML];
+   }
+   else if( strcmp( tmp, "JPG" ) == 0 ){
+      return config[JPG];
+   }
+   else if( strcmp( tmp, "MP3" ) == 0 ){
+      return config[MP3];
+   }
+   else if( strcmp( tmp, "WAV" ) == 0){
+      return config[WAV];
+   }
+   else
+   {
+      /* default type */
+      return config[DEFAULT]; 
+   }
+
+}
+
+
+/* generate header */
+static char*
+genheader( int code, size_t length, char* type ) 
 {
     static char header[ HEADERSIZ ]; 
     char tmp[ TMPLEN ];
 
     if( code == 404 )
     {
-       strcpy( header, "HTTP1.1 404 Not Found\r\n" );  
+       strcpy( header, "HTTP/1.1 404 Not Found\r\n" );  
     }
 
     if( code == 403 )
     {
-       strcpy( header, "HTTP1.1 403 Forbidden\r\n" );  
+       strcpy( header, "HTTP/1.1 403 Forbidden\r\n" );  
     }
 
     if( code == 400 )
     {
-       strcpy( header, "HTTP1.1 400 Bad Request\r\n" );  
+       strcpy( header, "HTTP/1.1 400 Bad Request\r\n" );  
     }
 
     if( code == 501 )
     {
-       strcpy( header, "HTTP1.1 501 Not Implemented\r\n" );  
+       strcpy( header, "HTTP/1.1 501 Not Implemented\r\n" );  
     }
 
     if( code == 200 )
     {
-       strcpy( header, "HTTP1.1 200 OK\r\n" );  
+       strcpy( header, "HTTP/1.1 200 OK\r\n" );  
     }
 
     strcat( header, "Connection: close\r\n" );
+
+
+    sprintf( tmp, "Date: %s\r\n", getrptime() );
+    strcat( header, tmp );
+    
+    sprintf( tmp, "Content-Type: %s\r\n", type );
+    strcat( header, tmp );
 
     sprintf( tmp, "Content-Length: %ld\r\n", length );
     strcat( header, tmp);
 
     strcat( header, "Server: myserver\r\n" );
+    
+    strcat( header, "\r\n" );
+    
 
-    strcat( header, "Date: " );
-    strcat( header, getrptime() );
-
-    strcat( header, "\r\n\r\n" );
     /* for test */
-    fprintf(stderr, "%s\n", header);
+    /*fprintf(stdout, "%s\n", header);*/
+    
     return header; 
 }
 
 
 static int 
-response( int connfd ,int code, int fp , char info[][TMPLEN] )
+response( int connfd ,int code, int fp , char info[][TMPLEN], 
+          char* type )
 {
    int n;
-   char *header;
    size_t length = 0, left;
    char buffer[ FILEBUF ];
-
-   if( code == 404 )
-   {     
+   char *header; 
+   if( code == 404 ) {     
      fp = open( "404.html", O_RDONLY );
      if( fp < 0 )
        return false;
@@ -455,6 +508,7 @@ response( int connfd ,int code, int fp , char info[][TMPLEN] )
 
    }
 
+
    /* get size of file */
    length = getfilesize( fp );
    if( length < 0 )
@@ -464,10 +518,11 @@ response( int connfd ,int code, int fp , char info[][TMPLEN] )
    sprintf( info[CONTENTLEN], "%ld", length );
 
    /* send header */
-   header = genheader( code, length ); 
+   header = genheader( code, length, type );  
+
+   FILE* fd;
    write( connfd, header, strlen(header) ); 
  
-
    /* send content */
    left = length;
    while( left > 0 ){
@@ -475,9 +530,9 @@ response( int connfd ,int code, int fp , char info[][TMPLEN] )
       if( n == 0 )
         break;
       write( connfd, buffer, n );
+    //  write( 2, buffer, n);
       left -= n;    
    }
-
 
    close( fp );
 }
@@ -490,6 +545,7 @@ handlereq( int connfd , int logged, int recording,
 {
   int n, code, result;
   char buffer[ BUFFERLEN ], address[ TMPLEN ];
+  char *header;
   int fp;  
 
   /* read request */
@@ -511,30 +567,31 @@ handlereq( int connfd , int logged, int recording,
      strcpy( address, config[ROOT] );
      strcat( address, info[URL] );
      fp = open( address, O_RDONLY );
-      
+           
      /* 403 or 404 */
      if( fp < 0 )
      {
         if( errno == EACCES )
         {
           strcpy(info[STATUS], "403");
-          result = response( connfd , 403, INVALID, info );      
+          result = response( connfd , 403, INVALID, info, gettype(info[URL], config) );      
         }
         else
         {
           strcpy(info[STATUS], "404");
-          result = response( connfd, 404, INVALID, info );
+          result = response( connfd, 404, INVALID, info, gettype(info[URL], config) );
         }
      }
      else
      {
+       /* 200 OK */
        strcpy(info[STATUS], "200");
-       result = response( connfd, 200, fp, info );
+       result = response( connfd, 200, fp, info, gettype(info[URL], config) );
      }
   }
   else
   {
-     result = response( connfd, code, INVALID, info );
+     result = response( connfd, code, INVALID, info, gettype(info[URL], config) );
   }
   
 

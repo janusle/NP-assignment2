@@ -1,5 +1,5 @@
 CC=gcc
-FLAG=-g -lsocket -lnsl
+FLAG=-g #-lsocket -lnsl
 all: server-single
 
 server-single: error.o http.o server-single.o

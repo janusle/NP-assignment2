@@ -21,11 +21,12 @@
 #define TMPLEN 300
 #define BUFFERLEN 2048
 #define INFOSIZ 2048
-#define CONFLEN 8
+#define CONFLEN 16
 #define INFOLEN 4
 #define CONFSIZE 50
 
 #define INVALID -1
+
 #define PORT 0
 #define HOST 1
 #define ROOT 2
@@ -34,7 +35,14 @@
 #define STAT 5
 #define LOG 6
 #define RD 7
-
+#define TXT 8
+#define HTM 9
+#define HTML 10
+#define JPG 11
+#define MP3 12
+#define WAV 13
+#define DEFAULT 14
+#define TYPELEN 15
 #define FILEBUF 1000
 #define HEADERSIZ 1000
 #define METHODLEN 300
@@ -49,7 +57,6 @@
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
 typedef struct addrinfo AR;
-
 
 /*wrapper function*/
 
@@ -66,6 +73,7 @@ pid_t Fork( void );
 void Close( int sockfd );
 
 void *Malloc( size_t size );
+
 
 /* initializing functions */
 int init( char *host, char *port, int backlog );
