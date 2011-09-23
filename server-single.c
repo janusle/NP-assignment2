@@ -11,14 +11,14 @@ main( int argc, char **argv )
 
    /* for test */
    strcpy( config[ ROOT ], "." );
-   strcpy( config[ HOST ], "localhost" );
+   strcpy( config[ HOST ], "yallara.cs.rmit.edu.au" );
    strcpy( config[ LOG ] , "web.log" );
    strcpy( config[ RD ] , "lastrequest.txt" );
 
    /* read config here */
 
 
-   listenfd = init( INADDR_ANY, "11256", 3 );
+   listenfd = init( "yallara.cs.rmit.edu.au", "40311", 3 );
 
    for( ; ; ) {
      

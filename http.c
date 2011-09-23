@@ -1,5 +1,4 @@
 #include "http.h"
-
 #define SERVERNAME "webserver"
 
 void *
