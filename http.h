@@ -81,7 +81,7 @@ void *Malloc( size_t size );
 int init( char *host, char *port, int backlog );
 
 /* handlers */
-void handlereqsgl(int listenfd, int logged, int recording, 
+void handlereqsgl(int listenfd,
                   char config[][CONFSIZE], contenttyp* type[TYPENUM]);
 
 

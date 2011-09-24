@@ -523,7 +523,7 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
 
 /* handle request (general version) */
 static int
-handlereq( int connfd , int logged, int recording, 
+handlereq( int connfd ,
            char config[CONFLEN][CONFSIZE] , 
            contenttyp* type[ TYPENUM ], char info[][TMPLEN] )
 {
@@ -531,6 +531,7 @@ handlereq( int connfd , int logged, int recording,
   char buffer[ BUFFERLEN ], address[ TMPLEN ];
   char *header;
   int fp;  
+  FILE *fd ;
 
   /* read request */
   do{
@@ -542,6 +543,26 @@ handlereq( int connfd , int logged, int recording,
       return false;
  
   buffer[n] = '\0';
+  
+  if( strcmp( config[RECORDING], "yes" ) == 0 )
+  {
+     /*
+     fp = open( config[RD], O_WRONLY | O_CREAT | O_TRUNC,
+                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
+     if( fp < 0 )
+     {
+        
+     write( 2, buffer, n);
+     write( fp, buffer, n );
+     close(fp);
+     */
+
+     fd = fopen( config[RD], "w" );
+     fprintf(fd, "%s\n", buffer );
+     fclose(fd);
+  }
+
+
   /* parse header */
   code = parseheader( buffer, n , config, info );
 
@@ -595,13 +616,16 @@ handlereq( int connfd , int logged, int recording,
 
 /* handle request (single process version) */
 void
-handlereqsgl( int listenfd, int logged, int recording, 
-              char config[][CONFSIZE], contenttyp* type[TYPENUM] )
+handlereqsgl( int listenfd, char config[][CONFSIZE], 
+              contenttyp* type[TYPENUM] )
 {
    int connfd, len, n, err;
    SAI cliaddr;
-   char log[ LOGLEN ], cliinfo[ TMPLEN ], addr[ INET_ADDRSTRLEN ], acptime[ TIMELEN ] ,
+   char log[ LOGLEN ], cliinfo[ TMPLEN ], 
+        addr[ INET_ADDRSTRLEN ], acptime[ TIMELEN ] ,
         clstime[ TIMELEN ], repinfo[ INFOSIZ ] ,info[INFOLEN][TMPLEN] ;
+   FILE *fp;
+
    err = 0;
    len = sizeof( cliaddr );
    connfd = Accept( listenfd, (SA*) &cliaddr, &len );
@@ -610,9 +634,7 @@ handlereqsgl( int listenfd, int logged, int recording,
    strcpy( acptime, getdatetime() );
  
    /* handle request , if fail to do , return */
-   if ( handlereq( connfd , logged, recording, 
-                   config, type, info) == false )
-     err = errno; 
+   if ( handlereq( connfd , config, type, info) == false ) err = errno; 
 
    close( connfd );
 
@@ -629,9 +651,11 @@ handlereqsgl( int listenfd, int logged, int recording,
    /* for test */
    fprintf(stderr, "%s", log );
 
-   if( logged )
+   if( strcmp( config[LOGGING], "yes" ) == 0 )
    {
-       
+     fp = fopen( config[LOG] , "a");
+     fprintf( fp, "%s", log );
+     fclose(fp);
    }
    
 }

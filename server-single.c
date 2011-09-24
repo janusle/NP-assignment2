@@ -6,52 +6,33 @@ int
 main( int argc, char **argv )
 {
    SAI cliaddr;
-   int listenfd;
-   int len;
-   int i;
+   int listenfd, len, logging, recording;
    char config[ CONFLEN ][ CONFSIZE ];
    contenttyp* type[ TYPENUM ];
 
-   init_config( "test.config", config, type );
-  
-
-   /* for test */
-   /* 
-   for(i=0; i<CONFLEN; i++ )
+   if( argc < 2 )
    {
-      printf("%s\n", config[i]); 
+     fprintf(stderr, "Too few arguments\n");
+     fprintf(stderr, "Usage: server-single configfile\n");
+     exit(EXIT_FAILURE);
    }
 
-   for(i=0; type[i] != NULL; i++ )
-   {
-      printf("%s %s\n", type[i]->ext, type[i]->contype );
-   }
-   */
-
-   /* for test */
-   /*
-   strcpy( config[ ROOT ], "." );
-   strcpy( config[ HOST ], "localhost" );
-   strcpy( config[ LOG ] , "web.log" );
-   strcpy( config[ RD ] , "lastrequest.txt" );
-   strcpy( config[ TXT ], "text/plain" );
-   strcpy( config[ HTM ], "text/html" );
-   strcpy( config[ HTML ], "text/html" );
-   strcpy( config[ JPG ], "image/jpeg" );
-   strcpy( config[ MP3 ], "audio/mpeg" );
-   strcpy( config[ WAV ], "audio/vnd.wave" );
-   strcpy( config[ DEFAULT ], "text/plain" );
-   */
    /* read config here */
+   init_config( argv[1], config, type );
+   if( strcmp( config[LOGGING], "yes" ) == 0 )
+     logging = 1;
+   else
+     logging = 0;
 
-   
-   listenfd = init( config[ HOST ], 
-                    config[ PORT ], 3 );
+   if( strcmp( config[RECORDING], "yes" ) == 0 )
+     recording = 1;
+   else
+     recording = 0;
 
-   for( ; ; ) {
-     
-       handlereqsgl( listenfd, 1 , 1, config, type );
+   listenfd = init( config[ HOST ], config[ PORT ], 3 );
 
+   for( ; ; ) { 
+       handlereqsgl( listenfd, config, type );
    }
    
    return EXIT_SUCCESS;
