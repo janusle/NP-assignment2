@@ -113,7 +113,8 @@ istype( char* type )
 
 
 void
-init_config( char* filename , char config[][CONFSIZE], contenttyp* type[TYPNUM] )
+init_config( char* filename , char config[][CONFSIZE], 
+             contenttyp* type[TYPNUM] )
 {
   FILE* fd;
   char *line, *tmp[ARRAYLEN];

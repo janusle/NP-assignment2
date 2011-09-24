@@ -63,6 +63,10 @@
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
 typedef struct addrinfo AR;
+typedef struct{
+    char ext[ TYPELEN ];
+    char contype[ TYPELEN ];
+} contenttyp;
 
 /*wrapper function*/
 
@@ -86,7 +90,7 @@ int init( char *host, char *port, int backlog );
 
 /* handlers */
 void handlereqsgl(int listenfd, int logged, int recording, 
-                  char config[][CONFSIZE]);
+                  char config[][CONFSIZE], contenttyp* type[TYPENUM]);
 
 
 #endif

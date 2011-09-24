@@ -20,10 +20,6 @@
 #define LEN 150
 #define LINENUM 200
 
-typedef struct{
-  char ext[ TYPESIZ ];
-  char contype[ TYPESIZ ];
-} contenttyp;
 
 void explode( char* line, char* array[ARRAYLEN] );
 

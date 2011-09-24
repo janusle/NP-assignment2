@@ -368,7 +368,8 @@ getfilesize( int fd )
 
 /* get content type */
 static char*
-gettype( char* url, contenttyp* type[ TYPENUM ] )
+gettype( char* url, char config[][CONFSIZE],
+         contenttyp* type[ TYPENUM ] )
 {
    int len, i;
    char tmp[ TMPLEN ];
@@ -383,31 +384,15 @@ gettype( char* url, contenttyp* type[ TYPENUM ] )
      return config[DEFAULT];
 
    strcpy( tmp, &url[i+1] );
-   upperline( tmp , strlen(tmp) );
-    
-   if( strcmp( tmp, "TXT" ) == 0 ){
-      return config[TXT];
+   
+   for( i=0; type[i] != NULL; i++ ){
+      if( strcmp( type[i]->ext, tmp ) == 0)
+      {
+         return type[i]->contype;
+      }
    }
-   else if( strcmp( tmp, "HTM" ) == 0 ){
-      return config[HTM];
-   }
-   else if( strcmp( tmp, "HTML" ) == 0 ){
-      return config[HTML];
-   }
-   else if( strcmp( tmp, "JPG" ) == 0 ){
-      return config[JPG];
-   }
-   else if( strcmp( tmp, "MP3" ) == 0 ){
-      return config[MP3];
-   }
-   else if( strcmp( tmp, "WAV" ) == 0){
-      return config[WAV];
-   }
-   else
-   {
-      /* default type */
-      return config[DEFAULT]; 
-   }
+
+   return config[DEFAULT];
 }
 
 
@@ -574,26 +559,27 @@ handlereq( int connfd , int logged, int recording,
         {
           strcpy(info[STATUS], "403");
           result = response( connfd , 403, INVALID, info, 
-                             gettype(info[URL], config) );      
+                             gettype(info[URL], config, type) );      
         }
         else
         {
           strcpy(info[STATUS], "404");
           result = response( connfd, 404, INVALID, info, 
-                             gettype(info[URL], config) );
+                             gettype(info[URL], config, type) );
         }
      }
      else
      {
        /* 200 OK */
        strcpy(info[STATUS], "200");
-       result = response( connfd, 200, fp, info, gettype(info[URL], config));
+       result = response( connfd, 200, fp, info, 
+                gettype(info[URL], config, type));
      }
   }
   else
   {
      result = response( connfd, code, INVALID, info, 
-                        gettype(info[URL], config) );
+                        gettype(info[URL], config, type) );
   }
   
 
