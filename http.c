@@ -386,6 +386,7 @@ gettype( char* url, char config[][CONFSIZE] )
    strcpy( tmp, &url[i+1] );
    upperline( tmp , strlen(tmp) );
    
+   /*
    if( strcmp( tmp, "TXT" ) == 0 ){
       return config[TXT];
    }
@@ -405,11 +406,11 @@ gettype( char* url, char config[][CONFSIZE] )
       return config[WAV];
    }
    else
+   */
    {
       /* default type */
       return config[DEFAULT]; 
    }
-
 }
 
 
