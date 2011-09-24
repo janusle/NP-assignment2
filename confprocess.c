@@ -219,7 +219,7 @@ init( char* filename , char config[][CONFSIZE] )
   if( strcmp( config[PORT], "" ) == 0  || 
       strcmp( config[HOST], "" ) == 0  ||
       strcmp( config[ROOT], "" ) == 0 ||
-      strcmp( )
+      strcmp()  )
   {
     fprintf(stderr, "Bad format in config file\n");
     exit(EXIT_FAILURE);
