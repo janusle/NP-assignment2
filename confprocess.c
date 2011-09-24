@@ -1,34 +1,31 @@
 #include "confprocess.h"
 
 
-char**
-explode( char* line )
+void
+explode( char* line , char* array[ARRAYLEN] )
 {
-  static char* array[ARRAYLEN];
   int i, size;
 
   array[0] = (char*)Malloc( sizeof(char) * LEN );
   array[1] = (char*)Malloc( sizeof(char) * LEN );
 
   size = strlen(line);
+  memset( array[0], 0, sizeof(char)*LEN );
+  memset( array[1], 0, sizeof(char)*LEN );
+
   for( i=0; !isspace(line[i]) && i<size ;i++)
   ;
 
-  memcpy( array[0], line, i );
+  strncpy( array[0], line, i );
 
   for(; isspace(line[i]) && i<size; i++)
   ;
 
   strcpy( array[1], line+i);
 
-  /*
-  strcpy(array[0], strtok( line, " " ));
-  strcpy(array[1], strtok( NULL, " " ));
-  */ 
-  return array;
 }
 
-
+/*
 static void*
 Malloc( size_t size )
 {
@@ -42,7 +39,7 @@ Malloc( size_t size )
   return tmp;
 
 }
-
+*/
 
 static void 
 trim( char* line )
@@ -74,6 +71,8 @@ trim( char* line )
    
 
    strcpy(line, st);
+
+   free(st);
 }
 
 
@@ -100,13 +99,26 @@ getl( char *line, FILE* fd )
 }
 
 
+static int 
+istype( char* type )
+{
+  if( strlen( type ) <= PREFIX )
+    return false;
+  
+  if( strncmp( type, "type-", 5 ) != 0 )
+    return false;
+
+  return true;
+}
+
+
 void
-init( char* filename , char config[][CONFSIZE] )
+init_config( char* filename , char config[][CONFSIZE], contenttyp* type[TYPNUM] )
 {
   FILE* fd;
-  char *line, **tmp;
+  char *line, *tmp[ARRAYLEN];
   int i;
-
+   
   line = (char*)Malloc( sizeof(char) * LINENUM);
 
   fd = fopen(filename, "r");
@@ -117,20 +129,24 @@ init( char* filename , char config[][CONFSIZE] )
 
   for(i=0; i<CONFLEN; i++)
     strcpy( config[i], "" );
+  
+  for(i=0; i<TYPNUM; i++ )
+    type[i] = NULL;
 
+
+  i=0;
   while( (getl(line,  fd ) != NULL) )
   {
 
     if( isalpha(line[0]) )
     {
 
-      tmp = explode( line );
-
+      explode( line , tmp );
+      
       if( strcmp( "port", tmp[OPTION] ) == 0 )
       {
          strcpy( config[PORT], tmp[VALUE] );
       }
-
 
       if( strcmp( "host", tmp[OPTION] ) == 0 )
       { 
@@ -177,45 +193,23 @@ init( char* filename , char config[][CONFSIZE] )
         strcpy( config[RECORDING], tmp[VALUE] );
       }
 
-      if( strcmp( "type-txt" , tmp[OPTION] ) == 0 )
-      {
-        strcpy( config[TXT], tmp[VALUE] );
-      }
-      
-      if( strcmp( "type-htm" , tmp[OPTION] ) == 0 )
-      {
-        strcpy( config[HTM], tmp[VALUE] );
-      }
-
-      if( strcmp( "type-html" , tmp[OPTION] ) == 0 )
-      {
-        strcpy( config[HTML], tmp[VALUE] );
-      }
-
-      if( strcmp( "type-jpg" , tmp[OPTION] ) == 0 )
-      {
-        strcpy( config[JPG], tmp[VALUE] );
-      }
-
-      if( strcmp( "type-mp3" , tmp[OPTION] ) == 0 )
-      {
-        strcpy( config[MP3], tmp[VALUE] );
-      }
-
-      if( strcmp( "type-wav" , tmp[OPTION] ) == 0 )
-      {
-        strcpy( config[WAV], tmp[VALUE] );
-      }
-
       if( strcmp( "type" , tmp[OPTION] ) == 0 )
       {
         strcpy( config[DEFAULT], tmp[VALUE] );
       }
+      
+      if( istype( tmp[OPTION] ) )
+      {
+        type[i] = (contenttyp*)Malloc( sizeof(contenttyp) );
+        strcpy( type[i]->ext, tmp[OPTION]+PREFIX );
+        strcpy( type[i++]->contype, tmp[VALUE] );
+      }
 
     }
   }
-
+  
   /* set default value */
+  /*
   if( strcmp( config[PORT], "" ) == 0  || 
       strcmp( config[HOST], "" ) == 0  ||
       strcmp( config[ROOT], "" ) == 0 ||
@@ -238,7 +232,7 @@ init( char* filename , char config[][CONFSIZE] )
     config[SUP_TIMEOUT] = (char*)Malloc( sizeof(char)*LEN );
     strcpy( config[SUP_TIMEOUT], "ON");
   }
-
+  */
   free(line);
   fclose(fd); 
 }

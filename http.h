@@ -21,7 +21,7 @@
 #define TMPLEN 300
 #define BUFFERLEN 2048
 #define INFOSIZ 2048
-#define CONFLEN 17
+#define CONFLEN 11
 #define INFOLEN 4
 #define CONFSIZE 50
 
@@ -35,16 +35,19 @@
 #define STAT 5
 #define LOG 6
 #define RD 7
+/*
 #define TXT 8
 #define HTM 9
 #define HTML 10
 #define JPG 11
 #define MP3 12
 #define WAV 13
-#define DEFAULT 14
-#define LOGGING 15
-#define RECORDING 16
+*/
+#define DEFAULT 8
+#define LOGGING 9
+#define RECORDING 10
 
+#define TYPENUM 200
 #define TYPELEN 15
 #define FILEBUF 1000
 #define HEADERSIZ 1000
