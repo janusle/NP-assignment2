@@ -35,14 +35,6 @@
 #define STAT 5
 #define LOG 6
 #define RD 7
-/*
-#define TXT 8
-#define HTM 9
-#define HTML 10
-#define JPG 11
-#define MP3 12
-#define WAV 13
-*/
 #define DEFAULT 8
 #define LOGGING 9
 #define RECORDING 10

@@ -210,30 +210,45 @@ init_config( char* filename , char config[][CONFSIZE],
   }
   
   /* set default value */
-  /*
+  
   if( strcmp( config[PORT], "" ) == 0  || 
       strcmp( config[HOST], "" ) == 0  ||
-      strcmp( config[ROOT], "" ) == 0 ||
-      strcmp( config[ )  )
+      strcmp( config[ROOT], "" ) == 0  ||
+      strcmp( config[DEFAULT], "" ) == 0 ||
+      strcmp( config[SDFILE], "" ) == 0 ||
+      strcmp( config[STAT], "" ) == 0 )
   {
-    fprintf(stderr, "Bad format in config file\n");
+    fprintf(stderr, "Config Error: Important information missing\n");
     exit(EXIT_FAILURE);
   }
 
 
-  if( config[PRINT_MSG] == NULL )
+  if( strcmp( config[LOGGING], "yes" ) == 0 &&
+      strcmp( config[LOG], "" ) == 0 )
   {
-    config[PRINT_MSG] = (char*)Malloc( sizeof(char)*LEN );
-    strcpy( config[PRINT_MSG], "ON");
+    fprintf(stderr, "Config Error:\
+You turnned on logging but didn't specify filename\n");
+    exit(EXIT_FAILURE);
   }
 
 
-  if( config[SUP_TIMEOUT] == NULL )
+  if( strcmp( config[RECORDING], "yes" ) == 0 &&
+      strcmp( config[RD], "" ) == 0 ) 
   {
-    config[SUP_TIMEOUT] = (char*)Malloc( sizeof(char)*LEN );
-    strcpy( config[SUP_TIMEOUT], "ON");
+    fprintf(stderr,"Config Error:\
+You turnned on recording but didn't specify filename\n");
+    exit(EXIT_FAILURE);
   }
-  */
+
+  /* set defualt shutdown-signal */
+  if( strcmp( config[SDSIG], "" ) == 0 )
+  {
+    strcpy( config[SDSIG], "2" );
+    fprintf(stderr, "Note: You didn't specify shutdown-signal, then default\
+ signal is 2)SIGINT.\n");
+
+  }
+
   free(line);
   fclose(fd); 
 }
