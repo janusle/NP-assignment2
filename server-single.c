@@ -16,7 +16,7 @@ main( int argc, char **argv )
   
 
    /* for test */
-   
+   /* 
    for(i=0; i<CONFLEN; i++ )
    {
       printf("%s\n", config[i]); 
@@ -26,7 +26,7 @@ main( int argc, char **argv )
    {
       printf("%s %s\n", type[i]->ext, type[i]->contype );
    }
-
+   */
 
    /* for test */
    /*
@@ -44,14 +44,15 @@ main( int argc, char **argv )
    */
    /* read config here */
 
-   /*
-   listenfd = init( "localhost", "40311", 3 );
+   
+   listenfd = init( config[ HOST ], 
+                    config[ PORT ], 3 );
 
    for( ; ; ) {
      
-       handlereqsgl( listenfd, 1 , 1, config );
+       handlereqsgl( listenfd, 1 , 1, config, type );
 
    }
-   */
+   
    return EXIT_SUCCESS;
 }

@@ -172,7 +172,6 @@ upperline( char* st, int len )
 }
 
 
-
 static void
 lowerline( char* st, int len )
 {
@@ -369,7 +368,7 @@ getfilesize( int fd )
 
 /* get content type */
 static char*
-gettype( char* url, char config[][CONFSIZE] )
+gettype( char* url, contenttyp* type[ TYPENUM ] )
 {
    int len, i;
    char tmp[ TMPLEN ];
@@ -385,8 +384,7 @@ gettype( char* url, char config[][CONFSIZE] )
 
    strcpy( tmp, &url[i+1] );
    upperline( tmp , strlen(tmp) );
-   
-   /*
+    
    if( strcmp( tmp, "TXT" ) == 0 ){
       return config[TXT];
    }
@@ -406,7 +404,6 @@ gettype( char* url, char config[][CONFSIZE] )
       return config[WAV];
    }
    else
-   */
    {
       /* default type */
       return config[DEFAULT]; 
@@ -542,7 +539,8 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
 /* handle request (general version) */
 static int
 handlereq( int connfd , int logged, int recording, 
-           char config[CONFLEN][CONFSIZE] , char info[][TMPLEN] )
+           char config[CONFLEN][CONFSIZE] , 
+           contenttyp* type[ TYPENUM ], char info[][TMPLEN] )
 {
   int n, code, result;
   char buffer[ BUFFERLEN ], address[ TMPLEN ];
@@ -575,24 +573,27 @@ handlereq( int connfd , int logged, int recording,
         if( errno == EACCES )
         {
           strcpy(info[STATUS], "403");
-          result = response( connfd , 403, INVALID, info, gettype(info[URL], config) );      
+          result = response( connfd , 403, INVALID, info, 
+                             gettype(info[URL], config) );      
         }
         else
         {
           strcpy(info[STATUS], "404");
-          result = response( connfd, 404, INVALID, info, gettype(info[URL], config) );
+          result = response( connfd, 404, INVALID, info, 
+                             gettype(info[URL], config) );
         }
      }
      else
      {
        /* 200 OK */
        strcpy(info[STATUS], "200");
-       result = response( connfd, 200, fp, info, gettype(info[URL], config) );
+       result = response( connfd, 200, fp, info, gettype(info[URL], config));
      }
   }
   else
   {
-     result = response( connfd, code, INVALID, info, gettype(info[URL], config) );
+     result = response( connfd, code, INVALID, info, 
+                        gettype(info[URL], config) );
   }
   
 
@@ -609,7 +610,7 @@ handlereq( int connfd , int logged, int recording,
 /* handle request (single process version) */
 void
 handlereqsgl( int listenfd, int logged, int recording, 
-              char config[][CONFSIZE])
+              char config[][CONFSIZE], contenttyp* type[TYPENUM] )
 {
    int connfd, len, n, err;
    SAI cliaddr;
@@ -623,7 +624,8 @@ handlereqsgl( int listenfd, int logged, int recording,
    strcpy( acptime, getdatetime() );
  
    /* handle request , if fail to do , return */
-   if ( handlereq( connfd , logged, recording, config, info ) == false )
+   if ( handlereq( connfd , logged, recording, 
+                   config, type, info) == false )
      err = errno; 
 
    close( connfd );
