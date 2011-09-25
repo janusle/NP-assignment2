@@ -22,7 +22,7 @@ Socket( int family, int type, int protocol )
   
   if( ( listenfd = socket( family, type, protocol ) ) < 0 )  
   {
-    err_quit( SERVERNAME ); 
+    err_quit( "Socket error" ); 
   }
 
   return listenfd;
@@ -35,7 +35,7 @@ Bind( int sockfd, const struct sockaddr *myaddr, socklen_t addrlen )
 
   if( bind( sockfd, myaddr, addrlen ) < 0 )
   {
-    err_quit( SERVERNAME );
+    err_quit( "Bind Error" );
   }
 
 }
@@ -46,7 +46,7 @@ Listen( int sockfd, int backlog )
 {
   if( listen( sockfd, backlog ) < 0 )
   {
-    err_quit( SERVERNAME );
+    err_quit( "Listen error" );
   }
 }
 
@@ -56,9 +56,12 @@ Accept( int sockfd, struct sockaddr *cliaddr, socklen_t *addrlen )
 {
   int connectfd;
 
-  if( (connectfd = accept( sockfd, cliaddr, addrlen )) < 0 )
+  while( (connectfd = accept( sockfd, cliaddr, addrlen )) < 0 )
   {
-    err_quit( SERVERNAME );
+    if( errno == EINTR )
+      continue;
+
+    err_quit( "Accept error" );
   }
   
   return connectfd;
@@ -72,7 +75,7 @@ Fork( void )
 
   if( (pid=fork()) < 0 )
   {
-     err_quit( SERVERNAME );
+     err_quit( "Fork error" );
   }
 
   return pid;
@@ -84,7 +87,7 @@ Close( int sockfd )
 {
   if( close( sockfd ) < 0 )
   {
-    err_quit( SERVERNAME );
+    err_quit( "Close error" );
   }
 
 }
@@ -680,6 +683,7 @@ sig_child( int signum )
 
    while( (waitpid( -1, NULL, WNOHANG) > 0 ) ){
       pidnum--;  
+      fprintf(stderr,"pidnum is %d\n", pidnum);
    }; 
 }
 
@@ -687,7 +691,6 @@ sig_child( int signum )
 static void
 sig_user1( int signum )
 {
-   fprintf(stderr, "user1 catached\n");
 }
 
 
@@ -775,7 +778,6 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
 }
 
 
-
 /* handle request (forked version) */
 void
 handlereqfork( int listenfd, char config[][CONFSIZE], 
@@ -804,7 +806,9 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      err_quit("signal error");
 
    for( ; ; ){
-   
+     
+     /* for test */
+     fprintf(stderr, "Before Accept\n");
      connfd = Accept( listenfd, (SA*) &cliaddr, &len );
      /* record accepted time */
      strcpy( acptime, getdatetime() );
@@ -849,14 +853,19 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
         printf("%d is done\n", getpid() );
         exit(0);
      }
-     
+    
+     /*
+     if ( sigprocmask(SIG_SETMASK, &old, NULL ) < 0 )
+         err_quit("signal error");
+     */
+
      close( connfd ); /* parent closes connected fd */
      pidnum++;
      /* for test */
-     fprintf(stderr, "%d is recorded pidnum is \n", pid, pidnum );
+     fprintf(stderr, "%d is recorded pidnum is %d\n", pid, pidnum );
 
      kill( pid, SIGUSR1 );
- 
+     /*sleep(1); */
    }
 
 }
