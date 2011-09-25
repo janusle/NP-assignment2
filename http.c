@@ -614,7 +614,7 @@ handlereq( int connfd ,
   }
 
   /* shutdown */
-  /*
+  
   if( code == 0 &&
       strcmp( config[SDFILE], info[URL] ) == 0)
   {
@@ -623,7 +623,7 @@ handlereq( int connfd ,
                         gettype(info[URL], config, type ) );
      return result;
   }
-  */
+  
 
   if( code == 0 )
   {
@@ -677,18 +677,34 @@ handlereq( int connfd ,
 static void
 sig_child( int signum )
 {
-   pid_t pid;
-   int stat;
 
-   while( (pid = waitpid( -1, &stat, WNOHANG) > 0 ) )
-     ; 
+   while( (waitpid( -1, NULL, WNOHANG) > 0 ) ){
+      pidnum--;  
+   }; 
+}
+
+
+static void
+sig_user1( int signum )
+{
+   fprintf(stderr, "user1 catached\n");
 }
 
 
 void
 sig_shutdown( int signum )
 { 
+    pid_t pid;
+
     fprintf(stderr, "Shutdown\n");
+  
+    if( pidnum > 0 ){ 
+      while( (pid = waitpid( -1, NULL, WNOHANG) > 0 ) ){
+        /* for test */
+        fprintf(stderr, "%d returned\n", pid );
+        pidnum--;  
+      }; 
+    }
     exit(0);
 }
 
@@ -767,15 +783,25 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
 {
    int connfd, len, n, err;
    SAI cliaddr;
+   pid_t pid;
    char log[ LOGLEN ], cliinfo[ TMPLEN ], 
         addr[ INET_ADDRSTRLEN ], acptime[ TIMELEN ] ,
         clstime[ TIMELEN ], repinfo[ INFOSIZ ] ,info[INFOLEN][TMPLEN] ;
+   sigset_t new, old , zero;
+
    FILE *fp;
 
    err = 0;
    len = sizeof( cliaddr );
 
+   /* All opertions about signal */
    signal( SIGCHLD, sig_child );
+   signal( SIGUSR1, sig_user1 );
+   sigemptyset(&zero);
+   sigemptyset(&new);
+   sigaddset(&new, SIGUSR1 );
+   if ( sigprocmask(SIG_BLOCK, &new, &old) < 0 )
+     err_quit("signal error");
 
    for( ; ; ){
    
@@ -783,8 +809,14 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      /* record accepted time */
      strcpy( acptime, getdatetime() );
     
-     if( Fork() == 0 ) /* child */
+     if( (pid = Fork()) == 0 ) /* child */
      {
+        sigsuspend(&zero);
+     
+        if ( sigprocmask(SIG_SETMASK, &old, NULL ) < 0 )
+           err_quit("signal error");
+
+        fprintf(stderr, "%d start\n", getpid() );
         /* handle request , if fail to do , set errno:w */
         if ( handlereq( connfd , config, type, info) == false ) 
           err = errno; 
@@ -811,11 +843,19 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
           fprintf( fp, "%s", log );
           fclose(fp);
         }
-   
+      
+     
+        /* for test */
+        printf("%d is done\n", getpid() );
         exit(0);
      }
-
+     
      close( connfd ); /* parent closes connected fd */
+     pidnum++;
+     /* for test */
+     fprintf(stderr, "%d is recorded pidnum is \n", pid, pidnum );
+
+     kill( pid, SIGUSR1 );
  
    }
 

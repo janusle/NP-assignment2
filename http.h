@@ -9,6 +9,7 @@
 #include<unistd.h>
 #include<string.h>
 #include<strings.h>
+#include<signal.h>
 #include<stdlib.h>
 #include<time.h>
 #include<ctype.h>
@@ -62,6 +63,7 @@ To shutdown, do 'kill -%s %d' or click\
 <a href=%s>here</a>"
 
 
+#define MAXCLINET 100
 
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
@@ -72,6 +74,15 @@ typedef struct{
 } contenttyp;
 typedef void sigfun(int signum);
 
+/*
+typedef struct {
+  pid_t pids[ MAXCLIENT ];
+  int  ;
+} cpids;
+*/
+
+int pidnum;
+/*cpids children;*/
 
 /*wrapper function*/
 
