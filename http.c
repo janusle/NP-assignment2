@@ -471,8 +471,9 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
    {     
      fp = open( "403.html", O_RDONLY );
      if( fp < 0 )
-       return false;
-
+     {
+        
+     }
    }
 
    if( code == 400 )
@@ -493,31 +494,66 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
 
 
    /* get size of file */
-   length = getfilesize( fp );
-   if( length < 0 )
-     return false;
+   if( fp > 0 )
+   {
+     length = getfilesize( fp );
+     if( length < 0 )
+       return false;
 
-   /* record content-length */
-   sprintf( info[CONTENTLEN], "%ld", length );
+     /* record content-length */
+     sprintf( info[CONTENTLEN], "%ld", length );
 
-   /* send header */
-   header = genheader( code, length, type );  
+     /* send header */
+     header = genheader( code, length, type );  
+     write( connfd, header, strlen(header) ); 
 
-   FILE* fd;
-   write( connfd, header, strlen(header) ); 
- 
-   /* send content */
-   left = length;
-   while( left > 0 ){
-      n = read( fp, buffer, FILEBUF );
-      if( n == 0 )
-        break;
-      write( connfd, buffer, n );
-    //  write( 2, buffer, n);
-      left -= n;    
+     /* send content */
+     if( fp > 0 )
+     {
+       left = length;
+       while( left > 0 ){
+          n = read( fp, buffer, FILEBUF );
+       if( n == 0 )
+          break;
+       write( connfd, buffer, n );
+       left -= n;    
+     }
+     close( fp );
+     }
+
    }
 
-   close( fp );
+   return true;
+}
+
+
+static int
+returnstat( int connfd, char info[][TMPLEN], int actconn, long totalreq, 
+            char* port, char* sig, char*sdfile )
+{
+  char buffer[ BUFFERLEN ], *header;
+  long left, len, lenheader;
+
+  sprintf( buffer, STATPAGE, getrptime(), actconn, totalreq, 
+           port, sig, getpid(), sdfile );
+
+  len = strlen(buffer);
+
+  /* record CONTENTLEN */
+  sprintf( info[CONTENTLEN], "%ld", len );
+  /*
+  lenheader = strlen( header );
+  */
+
+  /* send header */
+  header = genheader( 200, len, "text/html" ); 
+
+  write( connfd, header, strlen( header ) ); 
+
+  /* send content */
+  write( connfd, buffer, len );
+
+  return true;
 }
 
 
@@ -566,9 +602,32 @@ handlereq( int connfd ,
   /* parse header */
   code = parseheader( buffer, n , config, info );
 
+  /* request status */
+  if( code == 0 && 
+      strcmp( config[STAT], info[URL]+1 ) == 0 )
+  {
+      strcpy(info[STATUS], "200");
+
+      result = returnstat( connfd , info, 1, 10, config[PORT], config[SDSIG], 
+                           config[SDFILE] );
+      return result;
+  }
+
+  /* shutdown */
+  /*
+  if( code == 0 &&
+      strcmp( config[SDFILE], info[URL] ) == 0)
+  {
+     
+     result = response( connfd, SDFILE, INVALID, info,
+                        gettype(info[URL], config, type ) );
+     return result;
+  }
+  */
+
   if( code == 0 )
   {
-
+     
      strcpy( address, config[ROOT] );
      strcat( address, info[URL] );
      fp = open( address, O_RDONLY );
@@ -634,7 +693,8 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
    strcpy( acptime, getdatetime() );
  
    /* handle request , if fail to do , return */
-   if ( handlereq( connfd , config, type, info) == false ) err = errno; 
+   if ( handlereq( connfd , config, type, info) == false ) 
+       err = errno; 
 
    close( connfd );
 

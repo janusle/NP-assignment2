@@ -51,6 +51,16 @@
 #define CONTENTLEN 3
 #define STATUS 4
 
+#define STATPAGE "<h2>Server status page</h2>\
+<br/>\
+My WebServer <br/>\
+Status at %s <br/><br/>\
+Active connections: %d <br/>\
+Total requests: %ld <br/>\
+Listening port: %s <br/><br/>\
+To shutdown, do 'kill -%s %d' or click\
+<a href=%s>here</a>"
+
 
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
