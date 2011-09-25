@@ -558,7 +558,7 @@ returnstat( int connfd, char info[][TMPLEN], int actconn, long totalreq,
 
 
 /* handle request (general version) */
-static int
+int
 handlereq( int connfd ,
            char config[CONFLEN][CONFSIZE] , 
            contenttyp* type[ TYPENUM ], char info[][TMPLEN] )
@@ -673,6 +673,42 @@ handlereq( int connfd ,
 }
 
 
+/* signal handler, waits child */
+static void
+sig_child( int signum )
+{
+   pid_t pid;
+   int stat;
+
+   while( (pid = waitpid( -1, &stat, WNOHANG) > 0 ) )
+     ; 
+}
+
+
+void
+sig_shutdown( int signum )
+{ 
+    fprintf(stderr, "Shutdown\n");
+    exit(0);
+}
+
+
+sigfun*
+signal( int signum, sigfun *fun)
+{
+   struct sigaction act, oact;
+
+   act.sa_handler = fun;
+   sigemptyset( &act.sa_mask );
+   act.sa_flags = 0;
+   
+   if ( sigaction( signum, &act, &oact) < 0 )
+     return SIG_ERR;
+   return oact.sa_handler;
+}
+
+
+
 /* handle request (single process version) */
 void
 handlereqsgl( int listenfd, char config[][CONFSIZE], 
@@ -687,6 +723,8 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
 
    err = 0;
    len = sizeof( cliaddr );
+
+   
    connfd = Accept( listenfd, (SA*) &cliaddr, &len );
 
    /* record accepted time */
@@ -718,5 +756,68 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
      fclose(fp);
    }
    
+}
+
+
+
+/* handle request (forked version) */
+void
+handlereqfork( int listenfd, char config[][CONFSIZE], 
+              contenttyp* type[TYPENUM] )
+{
+   int connfd, len, n, err;
+   SAI cliaddr;
+   char log[ LOGLEN ], cliinfo[ TMPLEN ], 
+        addr[ INET_ADDRSTRLEN ], acptime[ TIMELEN ] ,
+        clstime[ TIMELEN ], repinfo[ INFOSIZ ] ,info[INFOLEN][TMPLEN] ;
+   FILE *fp;
+
+   err = 0;
+   len = sizeof( cliaddr );
+
+   signal( SIGCHLD, sig_child );
+
+   for( ; ; ){
+   
+     connfd = Accept( listenfd, (SA*) &cliaddr, &len );
+     /* record accepted time */
+     strcpy( acptime, getdatetime() );
+    
+     if( Fork() == 0 ) /* child */
+     {
+        /* handle request , if fail to do , set errno:w */
+        if ( handlereq( connfd , config, type, info) == false ) 
+          err = errno; 
+
+        close( connfd ); 
+        
+        /* record closed time */
+        strcpy( clstime, gettime() );
+
+        /* record client address and port */
+        inet_ntop( AF_INET, &cliaddr.sin_addr, addr, TMPLEN );
+        sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
+
+        /* generate log */ 
+        sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
+            info[URL], info[STATUS], info[CONTENTLEN], err ); 
+
+        /* for test */
+        fprintf(stderr, "%s", log );
+
+        if( strcmp( config[LOGGING], "yes" ) == 0 )
+        {
+          fp = fopen( config[LOG] , "a");
+          fprintf( fp, "%s", log );
+          fclose(fp);
+        }
+   
+        exit(0);
+     }
+
+     close( connfd ); /* parent closes connected fd */
+ 
+   }
+
 }
 

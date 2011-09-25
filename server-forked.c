@@ -6,7 +6,7 @@ int
 main( int argc, char **argv )
 {
    SAI cliaddr;
-   int listenfd, len, signum; 
+   int listenfd, len; 
    char config[ CONFLEN ][ CONFSIZE ];
    contenttyp* type[ TYPENUM ];
 
@@ -16,16 +16,12 @@ main( int argc, char **argv )
      fprintf(stderr, "Usage: server-single configfile\n");
      exit(EXIT_FAILURE);
    }
- 
 
    /* read config here */
    init_config( argv[1], config, type );
 
-   signal( atoi(config[SDSIG]) , sig_shutdown );
-
    listenfd = init( config[ HOST ], config[ PORT ], 3 );
 
-   
    for( ; ; ) { 
        handlereqsgl( listenfd, config, type );
    }

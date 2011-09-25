@@ -15,7 +15,7 @@
 #include<fcntl.h>
 #include "error.h"
 
-#define PNAME "single-server"
+#define PNAME "webserver"
 #define TIMELEN 50
 #define LOGLEN 200
 #define TMPLEN 300
@@ -62,6 +62,7 @@ To shutdown, do 'kill -%s %d' or click\
 <a href=%s>here</a>"
 
 
+
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
 typedef struct addrinfo AR;
@@ -69,6 +70,8 @@ typedef struct{
     char ext[ TYPELEN ];
     char contype[ TYPELEN ];
 } contenttyp;
+typedef void sigfun(int signum);
+
 
 /*wrapper function*/
 
@@ -94,5 +97,13 @@ int init( char *host, char *port, int backlog );
 void handlereqsgl(int listenfd,
                   char config[][CONFSIZE], contenttyp* type[TYPENUM]);
 
+int handlereq( int connfd, char config[][CONFSIZE], 
+                contenttyp* type[ TYPENUM ], char info [][TMPLEN] );
+
+
+/* signal */
+sigfun* signal( int signum, sigfun *fun );
+
+void sig_shutdown( int signum );
 
 #endif

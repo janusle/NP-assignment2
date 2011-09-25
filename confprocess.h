@@ -20,6 +20,7 @@
 #define LEN 150
 #define LINENUM 200
 
+#define SIGINTERM "2"
 
 void explode( char* line, char* array[ARRAYLEN] );
 

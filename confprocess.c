@@ -243,12 +243,19 @@ You turnned on recording but didn't specify filename\n");
   /* set defualt shutdown-signal */
   if( strcmp( config[SDSIG], "" ) == 0 )
   {
-    strcpy( config[SDSIG], "2" );
+    strcpy( config[SDSIG], SIGINTERM ); 
     fprintf(stderr, "Note: You didn't specify shutdown-signal, then default\
  signal is 2)SIGINT.\n");
 
   }
 
+  /* if signal is invalid */
+  if( atoi(config[SDSIG]) < SIGHUP || atoi(config[SDSIG]) > SIGUSR2 )
+  {
+    strcpy( config[SDSIG], SIGINTERM ); 
+    fprintf(stderr, "Note: You signal number is invalid, defualt signal \
+2)sigint is set.\n");
+  }
   free(line);
   fclose(fd); 
 }
