@@ -83,6 +83,8 @@ typedef struct {
 */
 
 int pidnum;
+int listenfd;
+
 /*cpids children;*/
 
 /*wrapper function*/
@@ -101,6 +103,7 @@ void Close( int sockfd );
 
 void *Malloc( size_t size );
 
+pid_t Wait( int *stat_loc );
 
 /* initializing functions */
 int init( char *host, char *port, int backlog );

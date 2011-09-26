@@ -25,7 +25,8 @@ main( int argc, char **argv )
 
    listenfd = init( config[ HOST ], config[ PORT ], 3 );
 
-   
+   pidnum = 0;
+
    for( ; ; ) { 
        handlereqsgl( listenfd, config, type );
    }

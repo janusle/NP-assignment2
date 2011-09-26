@@ -1,6 +1,28 @@
 #include "http.h"
 #define SERVERNAME "webserver"
 
+
+pid_t
+Wait( int *stat_loc )
+{
+  pid_t pid;
+
+  do{
+    pid = waitpid( -1, NULL, 0 );
+    if( pid < 0 )
+    {
+       if( errno != EINTR )
+         err_quit("Wait error"); 
+    }
+
+    if( pid > 0 )
+      return pid;
+  }
+  while(1);
+
+}
+
+
 void *
 Malloc( size_t size )
 {
@@ -730,8 +752,7 @@ sig_child( int signum )
 
 static void
 sig_user1( int signum )
-{
-}
+{}
 
 
 void
@@ -739,15 +760,22 @@ sig_shutdown( int signum )
 { 
     pid_t pid;
 
-    fprintf(stderr, "Shutdown\n");
-  
+    fprintf( stderr, "Shutdown signal was caught\n" );
+
+
+    close(listenfd);
+
     if( pidnum > 0 ){ 
-      while( (pid = waitpid( -1, NULL, WNOHANG) > 0 ) ){
-        /* for test */
-        fprintf(stderr, "%d returned\n", pid );
-        pidnum--;  
+      /* for test */
+      fprintf(stderr,"Waiting for all childs\n");
+      while( pidnum > 0  )
+      {
+        /* wait pidnum becoming 0 */
       }; 
+      fprintf(stderr, "All child processes returned.\n");
     }
+
+    fprintf(stderr, "Server will exit \n");
     exit(0);
 }
 

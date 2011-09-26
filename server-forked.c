@@ -6,7 +6,7 @@ int
 main( int argc, char **argv )
 {
    SAI cliaddr;
-   int listenfd, len, i; 
+   int len, i; 
    char config[ CONFLEN ][ CONFSIZE ];
    contenttyp* type[ TYPENUM ];
 
@@ -22,13 +22,6 @@ main( int argc, char **argv )
 
    signal( atoi( config[SDSIG]), sig_shutdown );
 
-   /* init childs */
-   /*
-   for( i=0; i<MAXCLIENT; i++ ){
-     children.pids[i] = 0; 
-   }
-   children.count = 0;
-   */
    pidnum = 0; 
 
    listenfd = init( config[ HOST ], config[ PORT ], 3 );
