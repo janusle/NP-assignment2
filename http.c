@@ -560,28 +560,68 @@ returnstat( int connfd, char info[][TMPLEN], int actconn, long totalreq,
 }
 
 
+static int 
+settimeout( int fd, int sec )
+{
+   struct timeval t;
+   fd_set rset;
+
+   t.tv_sec = sec;
+   t.tv_usec = 0;
+   FD_ZERO(&rset);
+   FD_SET(fd, &rset);
+   
+   return select( fd+1, &rset, NULL, NULL, &t );
+}
+
+
 /* handle request (general version) */
 int
 handlereq( int connfd ,
            char config[CONFLEN][CONFSIZE] , 
            contenttyp* type[ TYPENUM ], char info[][TMPLEN] )
 {
-  int n, code, result;
+  int n, code, result, siz;
   char buffer[ BUFFERLEN ], address[ TMPLEN ];
   char *header;
   int fp;  
   FILE *fd ;
 
   /* read request */
+  siz = 0;
   do{
-    n = read( connfd, buffer, BUFFERLEN );
-  }
-  while( n < 0 && errno == EINTR );
-  
-  if( n < 0 )
-      return false;
+
+    if( settimeout( connfd, TIMEOUT ) <= 0 )
+      break;
+
+    n = read( connfd, buffer+siz, BUFFERLEN );
  
-  buffer[n] = '\0';
+    if ( n == 0 )
+      break;
+
+    if( n < 0 )
+    {
+       if ( errno == EINTR )
+         continue;
+       return false;
+    }
+
+    siz += n; 
+    n = 0;
+
+    /* check if it is the end of http request */
+    if( siz >= 4 ) 
+    {
+       if( buffer[siz-2] ==  '\r' || buffer[siz-1] == '\n' ||
+         buffer[siz-4] == '\r' || buffer[siz-3] == '\n' )
+         break; 
+    } 
+
+  }
+  while(1);
+  
+ 
+  buffer[siz] = '\0';
   
   if( strcmp( config[RECORDING], "yes" ) == 0 )
   {
@@ -603,7 +643,7 @@ handlereq( int connfd ,
 
 
   /* parse header */
-  code = parseheader( buffer, n , config, info );
+  code = parseheader( buffer, siz , config, info );
 
   /* request status */
   if( code == 0 && 
@@ -808,7 +848,7 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
    for( ; ; ){
      
      /* for test */
-     fprintf(stderr, "Before Accept\n");
+     /*fprintf(stderr, "Before Accept\n");*/
      connfd = Accept( listenfd, (SA*) &cliaddr, &len );
      /* record accepted time */
      strcpy( acptime, getdatetime() );

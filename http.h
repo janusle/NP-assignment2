@@ -64,6 +64,7 @@ To shutdown, do 'kill -%s %d' or click\
 
 
 #define MAXCLINET 100
+#define TIMEOUT 3
 
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;

@@ -26,3 +26,4 @@ http.o:
 clean:
 	-rm *.o
 	-rm server-single
+	-rm server-forked
