@@ -893,10 +893,10 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
 
     
    
+   Pipe( pip );   
 
    for( ; ; ){
      
-     Pipe( pip );   
 
      /* for test */
      /*fprintf(stderr, "Before Accept\n");*/
@@ -908,7 +908,7 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      {
         sigsuspend(&zero);
         
-        Close(pip[1]); /* close write pipe */
+        //Close(pip[1]); /* close write pipe */
 
         if ( sigprocmask(SIG_SETMASK, &old, NULL ) < 0 )
            err_quit("signal error");
@@ -955,8 +955,11 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
 
      /* write latest pidnum to pipe */
      write( pip[1], tmp, strlen(tmp)+1 );
-     close(pip[0]); /* close pipes */
-     close(pip[1]);
+     /* close(pip[0]); */ /* close pipes */
+     /* close(pip[1]);
+      *
+      *
+      * */
 
      /* for test */
      fprintf(stderr, "%d is recorded pidnum is %d\n", pid, pidnum );
