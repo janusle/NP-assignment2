@@ -84,10 +84,14 @@ typedef struct {
 
 int pidnum;
 int listenfd;
+/* for communication between parents and children */
+int pip[2];
 
 /*cpids children;*/
 
 /*wrapper function*/
+
+void Pipe( int fileds[2] );
 
 int Socket( int family, int type, int protocol );
 

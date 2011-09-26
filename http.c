@@ -2,6 +2,14 @@
 #define SERVERNAME "webserver"
 
 
+void
+Pipe( int fileds[2] )
+{
+   if( pipe(fileds) < 0 )
+    err_quit("Pipe error");
+}
+
+
 pid_t
 Wait( int *stat_loc )
 {
@@ -603,7 +611,7 @@ handlereq( int connfd ,
            char config[CONFLEN][CONFSIZE] , 
            contenttyp* type[ TYPENUM ], char info[][TMPLEN] )
 {
-  int n, code, result, siz;
+  int n, code, result, siz, total, actnum;
   char buffer[ BUFFERLEN ], address[ TMPLEN ];
   char *header;
   int fp;  
@@ -672,8 +680,13 @@ handlereq( int connfd ,
       strcmp( config[STAT], info[URL]+1 ) == 0 )
   {
       strcpy(info[STATUS], "200");
+     
+      read( pip[0], buffer, TMPLEN );
+      /* for test */
+      fprintf(stderr,"%s\n", buffer);
 
-      result = returnstat( connfd , info, 1, 10, config[PORT], config[SDSIG], 
+      actnum = atoi( buffer ); 
+      result = returnstat( connfd , info, actnum, 10, config[PORT], config[SDSIG], 
                            config[SDFILE] );
       return result;
   }
@@ -811,8 +824,12 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
    err = 0;
    len = sizeof( cliaddr );
 
-   
+    
    connfd = Accept( listenfd, (SA*) &cliaddr, &len );
+
+   pipe( pip );
+   /* for test */
+   write( pip[1], "1", 2 ); /* write pipe */
 
    /* record accepted time */
    strcpy( acptime, getdatetime() );
@@ -856,7 +873,8 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
    pid_t pid;
    char log[ LOGLEN ], cliinfo[ TMPLEN ], 
         addr[ INET_ADDRSTRLEN ], acptime[ TIMELEN ] ,
-        clstime[ TIMELEN ], repinfo[ INFOSIZ ] ,info[INFOLEN][TMPLEN] ;
+        clstime[ TIMELEN ], repinfo[ INFOSIZ ] ,info[INFOLEN][TMPLEN],
+        tmp[ TMPLEN ];
    sigset_t new, old , zero;
 
    FILE *fp;
@@ -873,6 +891,10 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
    if ( sigprocmask(SIG_BLOCK, &new, &old) < 0 )
      err_quit("signal error");
 
+    
+   Pipe( pip );   
+   
+
    for( ; ; ){
      
      /* for test */
@@ -884,7 +906,9 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      if( (pid = Fork()) == 0 ) /* child */
      {
         sigsuspend(&zero);
-     
+        
+        Close(pip[1]); /* close write pipe */
+
         if ( sigprocmask(SIG_SETMASK, &old, NULL ) < 0 )
            err_quit("signal error");
 
@@ -922,18 +946,19 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
         exit(0);
      }
     
-     /*
-     if ( sigprocmask(SIG_SETMASK, &old, NULL ) < 0 )
-         err_quit("signal error");
-     */
-
+     /* some important operations */
+     //Close(pip[0]); /* close read pipe */
      close( connfd ); /* parent closes connected fd */
      pidnum++;
+       
+     sprintf( tmp, "%d", pidnum );
+     /* write latest pidnum to pipe */
+     
+
      /* for test */
      fprintf(stderr, "%d is recorded pidnum is %d\n", pid, pidnum );
 
-     kill( pid, SIGUSR1 );
-     /*sleep(1); */
+     kill( pid, SIGUSR1 ); /* tell child to start */
    }
 
 }
