@@ -892,11 +892,12 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      err_quit("signal error");
 
     
-   Pipe( pip );   
    
 
    for( ; ; ){
      
+     Pipe( pip );   
+
      /* for test */
      /*fprintf(stderr, "Before Accept\n");*/
      connfd = Accept( listenfd, (SA*) &cliaddr, &len );
@@ -947,13 +948,15 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      }
     
      /* some important operations */
-     //Close(pip[0]); /* close read pipe */
      close( connfd ); /* parent closes connected fd */
      pidnum++;
        
      sprintf( tmp, "%d", pidnum );
+
      /* write latest pidnum to pipe */
-     
+     write( pip[1], tmp, strlen(tmp)+1 );
+     close(pip[0]); /* close pipes */
+     close(pip[1]);
 
      /* for test */
      fprintf(stderr, "%d is recorded pidnum is %d\n", pid, pidnum );
