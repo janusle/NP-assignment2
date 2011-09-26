@@ -612,8 +612,8 @@ handlereq( int connfd ,
     /* check if it is the end of http request */
     if( siz >= 4 ) 
     {
-       if( buffer[siz-2] ==  '\r' || buffer[siz-1] == '\n' ||
-         buffer[siz-4] == '\r' || buffer[siz-3] == '\n' )
+       if( buffer[siz-2] ==  '\r' && buffer[siz-1] == '\n' &&
+         buffer[siz-4] == '\r' && buffer[siz-3] == '\n' )
          break; 
     } 
 
