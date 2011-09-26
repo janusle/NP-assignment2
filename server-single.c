@@ -27,6 +27,11 @@ main( int argc, char **argv )
 
    pidnum = 0;
 
+   /* initialize sd */
+   sd->pid = getpid();
+   sd->req = 0;
+   sd->act = 1; /* It's a single process program */
+
    for( ; ; ) { 
        handlereqsgl( listenfd, config, type );
    }

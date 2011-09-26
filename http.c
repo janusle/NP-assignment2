@@ -568,7 +568,7 @@ returnstat( int connfd, char info[][TMPLEN], int actconn, long totalreq,
   long left, len, lenheader;
 
   sprintf( buffer, STATPAGE, getrptime(), actconn, totalreq, 
-           port, sig, getpid(), sdfile );
+           port, sig, sd->pid, sdfile );
 
   len = strlen(buffer);
 
@@ -681,12 +681,12 @@ handlereq( int connfd ,
   {
       strcpy(info[STATUS], "200");
      
-      read( pip[0], buffer, TMPLEN );
+      /*read( pip[0], buffer, TMPLEN );*/
       /* for test */
-      fprintf(stderr,"%s\n", buffer);
+      /*fprintf(stderr,"%s\n", buffer);*/
 
-      actnum = atoi( buffer ); 
-      result = returnstat( connfd , info, actnum, 10, config[PORT], config[SDSIG], 
+      /*actnum = atoi( buffer ); */
+      result = returnstat( connfd , info, sd->act, sd->req, config[PORT], config[SDSIG], 
                            config[SDFILE] );
       return result;
   }
@@ -757,8 +757,9 @@ sig_child( int signum )
 {
 
    while( (waitpid( -1, NULL, WNOHANG) > 0 ) ){
-      pidnum--;  
-      fprintf(stderr,"pidnum is %d\n", pidnum);
+      //pidnum--;  
+      (sd->act)--;
+      fprintf(stderr,"active connection is %d\n", sd->act);
    }; 
 }
 
@@ -778,12 +779,12 @@ sig_shutdown( int signum )
 
     close(listenfd);
 
-    if( pidnum > 0 ){ 
+    if( sd->act > 0 ){ 
       /* for test */
       fprintf(stderr,"Waiting for all childs\n");
-      while( pidnum > 0  )
+      while( sd->act > 0  )
       {
-        /* wait pidnum becoming 0 */
+        /* wait sd->act becoming 0 */
       }; 
       fprintf(stderr, "All child processes returned.\n");
     }
@@ -827,10 +828,10 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
     
    connfd = Accept( listenfd, (SA*) &cliaddr, &len );
 
-   pipe( pip );
+   /*pipe( pip );*/
    /* for test */
-   write( pip[1], "1", 2 ); /* write pipe */
-
+   /*write( pip[1], "1", 2 ); *//* write pipe */
+   
    /* record accepted time */
    strcpy( acptime, getdatetime() );
  
@@ -868,7 +869,7 @@ void
 handlereqfork( int listenfd, char config[][CONFSIZE], 
               contenttyp* type[TYPENUM] )
 {
-   int connfd, len, n, err;
+   int connfd, len, n, err, shmid;
    SAI cliaddr;
    pid_t pid;
    char log[ LOGLEN ], cliinfo[ TMPLEN ], 
@@ -891,9 +892,21 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
    if ( sigprocmask(SIG_BLOCK, &new, &old) < 0 )
      err_quit("signal error");
 
-    
-   
-   Pipe( pip );   
+   /* Share the memory */ 
+   shmid = shmget( IPC_PRIVATE, sizeof(sharedmem), IPC_CREAT | 0600 );
+   if( shmid < 0 ){
+      err_quit("Shared memory error");
+   }
+   sd = (sharedmem*) shmat( shmid, NULL, 0 );
+   if( sd == (void*)-1 ){
+     err_quit("Attach memory error");
+   }
+   /* set value to shared memory */
+   sd->pid = getpid();
+   sd->req = 0;
+   sd->act = 0;
+
+   /*Pipe( pip );   */
 
    for( ; ; ){
      
@@ -901,6 +914,9 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      /* for test */
      /*fprintf(stderr, "Before Accept\n");*/
      connfd = Accept( listenfd, (SA*) &cliaddr, &len );
+
+     (sd->req)++; /* total reqs increment by 1 */
+
      /* record accepted time */
      strcpy( acptime, getdatetime() );
     
@@ -949,12 +965,14 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
     
      /* some important operations */
      close( connfd ); /* parent closes connected fd */
-     pidnum++;
-       
-     sprintf( tmp, "%d", pidnum );
+
+     /*pidnum++;*/
+     (sd->act)++;
+     
+     /*sprintf( tmp, "%d", sd->act );*/
 
      /* write latest pidnum to pipe */
-     write( pip[1], tmp, strlen(tmp)+1 );
+     /*write( pip[1], tmp, strlen(tmp)+1 );*/
      /* close(pip[0]); */ /* close pipes */
      /* close(pip[1]);
       *
@@ -962,7 +980,7 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
       * */
 
      /* for test */
-     fprintf(stderr, "%d is recorded pidnum is %d\n", pid, pidnum );
+     fprintf(stderr, "%d is recorded active connection is %d\n", pid, sd->act );
 
      kill( pid, SIGUSR1 ); /* tell child to start */
    }

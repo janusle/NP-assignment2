@@ -14,6 +14,9 @@
 #include<time.h>
 #include<ctype.h>
 #include<fcntl.h>
+#include<sys/types.h>
+#include<sys/ipc.h>
+#include<sys/shm.h>
 #include "error.h"
 
 #define PNAME "webserver"
@@ -75,19 +78,20 @@ typedef struct{
 } contenttyp;
 typedef void sigfun(int signum);
 
-/*
-typedef struct {
-  pid_t pids[ MAXCLIENT ];
-  int  ;
-} cpids;
-*/
+typedef struct{
+  pid_t pid; /* parent's pid */
+  int act; /* active connection */
+  long req; /* total requests */
+} sharedmem;
+
 
 int pidnum;
 int listenfd;
+sharedmem *sd;
+
 /* for communication between parents and children */
 int pip[2];
 
-/*cpids children;*/
 
 /*wrapper function*/
 
