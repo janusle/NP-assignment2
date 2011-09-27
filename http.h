@@ -17,6 +17,7 @@
 #include<sys/types.h>
 #include<sys/ipc.h>
 #include<sys/shm.h>
+#include<sys/wait.h>
 #include "error.h"
 
 #define PNAME "webserver"

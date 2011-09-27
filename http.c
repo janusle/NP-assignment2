@@ -21,7 +21,7 @@ Write( int fildes, void* buf, size_t nbyte )
 
     }
     
-    fprintf(stderr, " n is %ld errno is %d\n", n, errno );
+    /*fprintf(stderr, " n is %ld errno is %d\n", n, errno );*/
     written += n;
     left = nbyte-written; 
   }
@@ -161,7 +161,7 @@ int
 init( char *host, char *port , int backlog )
 {
    
-   int listenfd;
+   int listenfd, opt;
    AR hints, *res;
 
    bzero( &hints, sizeof(hints) );
@@ -174,6 +174,11 @@ init( char *host, char *port , int backlog )
    }
 
    listenfd = Socket( AF_INET, SOCK_STREAM , 0 );
+ 
+   opt = 1;
+   if( setsockopt( listenfd, SOL_SOCKET, SO_REUSEADDR, 
+                   &opt, sizeof(int) ) == -1 )
+     err_quit("setsockopt");
    
    Bind( listenfd , res->ai_addr, res->ai_addrlen );
 
