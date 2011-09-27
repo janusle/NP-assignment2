@@ -2,6 +2,29 @@
 #define SERVERNAME "webserver"
 
 
+ssize_t
+Write( int fildes, void* buf, size_t nbyte )
+{
+  size_t left, n, written;
+  
+  left = nbyte;
+  written = 0;
+
+  while( left > 0 ){
+    if( (n = write( fildes, buf+written , left )) < 0 ){
+        if( errno == EINTR )
+          n = 0;
+        else
+          err_quit("write error");
+    }
+    
+    written += n;
+    left = nbyte-written; 
+  }
+
+}
+
+
 void
 Pipe( int fileds[2] )
 {
@@ -491,7 +514,7 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
 {
    int n;
    size_t length = 0, left;
-   char buffer[ FILEBUF ];
+   char *buffer;
    char *header; 
    if( code == 404 ) {     
      fp = open( "404.html", O_RDONLY );
@@ -532,28 +555,27 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
      length = getfilesize( fp );
      if( length < 0 )
        return false;
+     
+     buffer = (char*)Malloc(length);
 
      /* record content-length */
      sprintf( info[CONTENTLEN], "%ld", length );
 
      /* send header */
      header = genheader( code, length, type );  
-     write( connfd, header, strlen(header) ); 
+     Write( connfd, header, strlen(header) ); 
 
      /* send content */
      if( fp > 0 )
      {
        left = length;
-       while( left > 0 ){
-          n = read( fp, buffer, FILEBUF );
-       if( n == 0 )
-          break;
-       write( connfd, buffer, n );
-       left -= n;    
-     }
-     close( fp );
-     }
+       read( fp, buffer, length );
+       Write( connfd, buffer, length);
 
+       close( fp );
+     }
+     
+     free(buffer);
    }
 
    return true;
@@ -581,10 +603,10 @@ returnstat( int connfd, char info[][TMPLEN], int actconn, long totalreq,
   /* send header */
   header = genheader( 200, len, "text/html" ); 
 
-  write( connfd, header, strlen( header ) ); 
+  Write( connfd, header, strlen( header ) ); 
 
   /* send content */
-  write( connfd, buffer, len );
+  Write( connfd, buffer, len );
 
   return true;
 }
@@ -824,14 +846,11 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
 
    err = 0;
    len = sizeof( cliaddr );
-
-    
+ 
    connfd = Accept( listenfd, (SA*) &cliaddr, &len );
 
-   /*pipe( pip );*/
-   /* for test */
-   /*write( pip[1], "1", 2 ); *//* write pipe */
-   
+   sd->req++;
+
    /* record accepted time */
    strcpy( acptime, getdatetime() );
  
@@ -906,13 +925,9 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
    sd->req = 0;
    sd->act = 0;
 
-   /*Pipe( pip );   */
 
    for( ; ; ){
      
-
-     /* for test */
-     /*fprintf(stderr, "Before Accept\n");*/
      connfd = Accept( listenfd, (SA*) &cliaddr, &len );
 
      (sd->req)++; /* total reqs increment by 1 */
@@ -969,16 +984,6 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      /*pidnum++;*/
      (sd->act)++;
      
-     /*sprintf( tmp, "%d", sd->act );*/
-
-     /* write latest pidnum to pipe */
-     /*write( pip[1], tmp, strlen(tmp)+1 );*/
-     /* close(pip[0]); */ /* close pipes */
-     /* close(pip[1]);
-      *
-      *
-      * */
-
      /* for test */
      fprintf(stderr, "%d is recorded active connection is %d\n", pid, sd->act );
 

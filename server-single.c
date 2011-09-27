@@ -25,7 +25,7 @@ main( int argc, char **argv )
 
    listenfd = init( config[ HOST ], config[ PORT ], 3 );
 
-   pidnum = 0;
+   sd = (sharedmem*) Malloc( sizeof(sharedmem) );
 
    /* initialize sd */
    sd->pid = getpid();

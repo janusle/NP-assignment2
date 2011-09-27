@@ -45,7 +45,7 @@
 
 #define TYPENUM 200
 #define TYPELEN 15
-#define FILEBUF 1000
+#define FILEBUF 500000
 #define HEADERSIZ 1000
 #define METHODLEN 300
 #define HOSTLEN 5
