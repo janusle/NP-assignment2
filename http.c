@@ -2,7 +2,7 @@
 #define SERVERNAME "webserver"
 
 
-ssize_t
+void
 Write( int fildes, void* buf, size_t nbyte )
 {
   size_t left, n, written;
@@ -14,14 +14,18 @@ Write( int fildes, void* buf, size_t nbyte )
     if( (n = write( fildes, buf+written , left )) < 0 ){
         if( errno == EINTR )
           n = 0;
+        else if( errno == EPIPE )
+          err_quit("Pipe error");
         else
-          err_quit("write error");
+          err_quit("Write error");
+
     }
     
+    fprintf(stderr, " n is %ld errno is %d\n", n, errno );
     written += n;
     left = nbyte-written; 
   }
-
+  
 }
 
 
@@ -145,6 +149,13 @@ Close( int sockfd )
 
 }
 
+static void
+sig_pipe( int signum )
+{
+   fprintf(stderr, "Pipe error, process will quit\n");
+   exit(EXIT_FAILURE);
+}
+
 
 int 
 init( char *host, char *port , int backlog )
@@ -167,7 +178,9 @@ init( char *host, char *port , int backlog )
    Bind( listenfd , res->ai_addr, res->ai_addrlen );
 
    Listen( listenfd, backlog );  
- 
+
+   signal( SIGPIPE, SIG_IGN );
+
    return listenfd;
 }
 
@@ -564,7 +577,7 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
      /* send header */
      header = genheader( code, length, type );  
      Write( connfd, header, strlen(header) ); 
-
+     
      /* send content */
      if( fp > 0 )
      {
@@ -784,6 +797,8 @@ sig_child( int signum )
       fprintf(stderr,"active connection is %d\n", sd->act);
    }; 
 }
+
+
 
 
 static void
