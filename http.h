@@ -18,6 +18,7 @@
 #include<sys/ipc.h>
 #include<sys/shm.h>
 #include<sys/wait.h>
+#include<pthread.h>
 #include "error.h"
 
 #define PNAME "webserver"
@@ -87,8 +88,17 @@ typedef struct{
 } sharedmem;
 
 
+typedef struct{
+  int connfd;
+  char config[CONFLEN][CONFSIZE];
+  contenttyp* type[ TYPENUM ];
+  char info [INFOLEN][TMPLEN];
+} servinfo; 
+
+
 int pidnum;
 int listenfd;
+int connfd;
 sharedmem *sd;
 int isSingle;
 

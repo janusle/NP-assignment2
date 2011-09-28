@@ -908,12 +908,47 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
 }
 
 
+void*
+handlereq_th( void* data )
+{
+  servinfo* si;
+  
+  pthread_detach( pthread_self());
+  si = (servinfo*) data;
+  handlreq( data->connfd, data->config, data->type, data->info );
+  
+}
+
+
+/* handle request( multithread version ) */
+void
+handlereqthread( int listenfd, char config[][CONFSIZE],
+                 contenttyp* type[TYPENUM] )
+{
+    SAI cliaddr;
+    int len;
+    pthread_t tid;
+    servinfo data;
+
+    len = sizeof( cliaddr );
+    for( ; ; ){ 
+        connfd = Accept( listenfd, (SA) &cliaddr, &len ); 
+
+        if ( pthread_create( &tid, NULL , &handlereq_th, (void*) data ) > 0 ){
+           perror("Thread error");
+        }
+    }
+
+}
+
+
+
 /* handle request (forked version) */
 void
 handlereqfork( int listenfd, char config[][CONFSIZE], 
               contenttyp* type[TYPENUM] )
 {
-   int connfd, len, n, err, shmid;
+   int len, n, err, shmid;
    SAI cliaddr;
    pid_t pid;
    char log[ LOGLEN ], cliinfo[ TMPLEN ], 
