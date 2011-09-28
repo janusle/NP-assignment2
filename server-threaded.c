@@ -29,6 +29,7 @@ main( int argc, char **argv )
    isSingle = 1; 
    isThreaded = 1;
 
+   
    handlereqthread( listenfd, config, type );
    
    return EXIT_SUCCESS;

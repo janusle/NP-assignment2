@@ -909,8 +909,7 @@ handlereq_th( void* data )
   servinfo* si;
   char info[INFOLEN][TMPLEN], log[ LOGLEN ], 
        cliinfo[ TMPLEN ], addr[ INET_ADDRSTRLEN ], 
-       acptime[ TIMELEN ], clstime[ TIMELEN ], 
-       repinfo[ INFOSIZ ]; 
+       clstime[ TIMELEN ], repinfo[ INFOSIZ ]; 
   SAI cliaddr;
   int err;
   FILE *fp;
@@ -934,7 +933,7 @@ handlereq_th( void* data )
   sprintf( cliinfo, "%s %d ", addr, ntohs( si->cliaddr.sin_port ) );
 
   /* generate log */ 
-  sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
+  sprintf( log, "%s %s %s %s %s %s %d\n", si->acptime, clstime, cliinfo, 
            si->info[URL], si->info[STATUS], si->info[CONTENTLEN], err ); 
 
   /* for test */
@@ -964,7 +963,7 @@ handlereqthread( int listenfd, char config[][CONFSIZE],
     int len;
     pthread_t tid;
     servinfo *data = NULL;
-
+    char acptime[ TIMELEN ];
 
     for( ; ; ){ 
         
@@ -972,11 +971,15 @@ handlereqthread( int listenfd, char config[][CONFSIZE],
         data = (servinfo*)Malloc( sizeof(servinfo) );
         data->config = config;
         data->type = type;
+
         len = sizeof( data->cliaddr );       
 
         connfd = Accept( listenfd, (SA*) &(data->cliaddr), &len ); 
-        data->connfd = connfd; 
 
+        /* record accepted time */
+        strcpy( data->acptime, getdatetime() );
+        
+        data->connfd = connfd; 
         
         if (pthread_create( &tid, NULL , handlereq_th, (void*)data)> 0){
            perror("Thread error");

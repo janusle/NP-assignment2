@@ -52,10 +52,11 @@
 #define METHODLEN 300
 #define HOSTLEN 5
 #define GETLEN 3
+
 #define URL 0
 #define VERSION 1
-#define CONTENTLEN 3
-#define STATUS 4
+#define CONTENTLEN 2
+#define STATUS 3
 
 #define STATPAGE "<h2>Server status page</h2>\
 <br/>\
@@ -93,6 +94,7 @@ typedef struct{
   char (*config)[CONFSIZE];
   contenttyp (*type)[TYPENUM];
   char info[INFOLEN][TMPLEN];
+  char acptime[ TIMELEN ];
   SAI cliaddr;
 } servinfo; 
 
