@@ -925,15 +925,17 @@ handlereq_th( void* data )
   FILE *fp;
 
   pthread_detach( pthread_self());
- 
+
+
   /* add active connection and total request */
-  /*
+  
   pthread_mutex_lock(&act_mutex); 
   sd->act += 1;
   sd->req += 1; 
   pthread_mutex_unlock(&act_mutex);
-  */
+  
 
+  printf("%d start\n", pthread_self() );
   si = (servinfo*) data;
 
   if ( handlereq( si->connfd, si->config,
@@ -971,11 +973,11 @@ handlereq_th( void* data )
   free(si);
   
   /* decrement active connection */
-  /*
+
   pthread_mutex_lock(&act_mutex); 
   sd->act -= 1;
   pthread_mutex_unlock(&act_mutex);
-  */
+  
 
   return NULL;
 }

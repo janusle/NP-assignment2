@@ -28,7 +28,8 @@ main( int argc, char **argv )
    
    isSingle = 1; 
    isThreaded = 1;
-  
+   pthread_mutex_init(&act_mutex, NULL);
+
    /* set shared memroy */
    sd = (sharedmem*)Malloc( sizeof(sharedmem) );
    sd->pid = getpid();

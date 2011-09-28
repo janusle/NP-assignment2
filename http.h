@@ -105,7 +105,7 @@ sharedmem *sd;
 int isSingle;
 int isThreaded;
 
-//pthread_mutex_t actmutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t act_mutex;
 
 /* for communication between parents and children */
 int pip[2];
