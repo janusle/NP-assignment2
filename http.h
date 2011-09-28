@@ -90,9 +90,10 @@ typedef struct{
 
 typedef struct{
   int connfd;
-  char config[CONFLEN][CONFSIZE];
-  contenttyp* type[ TYPENUM ];
-  char info [INFOLEN][TMPLEN];
+  char **config;
+  contenttyp** type;
+  char **info;
+  SAI cliaddr;
 } servinfo; 
 
 
@@ -101,6 +102,7 @@ int listenfd;
 int connfd;
 sharedmem *sd;
 int isSingle;
+int isThreaded;
 
 /* for communication between parents and children */
 int pip[2];

@@ -912,11 +912,52 @@ void*
 handlereq_th( void* data )
 {
   servinfo* si;
-  
-  pthread_detach( pthread_self());
+  char info[INFOLEN][TMPLEN], log[ LOGLEN ], 
+       cliinfo[ TMPLEN ], addr[ INET_ADDRSTRLEN ], 
+       acptime[ TIMELEN ], clstime[ TIMELEN ], 
+       repinfo[ INFOSIZ ]; pthread_detach( pthread_self());
+  SAI cliaddr;
+  int err;
+  FILE *fp;
+
   si = (servinfo*) data;
-  handlreq( data->connfd, data->config, data->type, data->info );
+  si->info = info;
+
+  /* for test */
+  fprintf( stderr, "%d start\n", pthread_self() );
+
+  if ( handlereq( si->connfd, si->config,
+                si->type, si->info ) == false )
+     err = errno;
+
+  close( si->connfd );
   
+  /* record closed time */
+  strcpy( clstime, gettime() );
+
+  /* record client address and port */
+  inet_ntop( AF_INET, &(si->cliaddr.sin_addr), addr, INET_ADDRSTRLEN );
+  sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
+
+  /* generate log */ 
+  sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
+           si->info[URL], si->info[STATUS], si->info[CONTENTLEN], err ); 
+
+  /* for test */
+  fprintf(stderr, "%s", log );
+
+  if( strcmp( si->config[LOGGING], "yes" ) == 0 )
+  {
+     fp = fopen( si->config[LOG] , "a");
+     fprintf( fp, "%s", log );
+     fclose(fp);
+  }
+       
+  /* for test */
+  printf("%d is done\n", pthread_self() );
+  exit(0);
+
+  return NULL;
 }
 
 
@@ -925,18 +966,26 @@ void
 handlereqthread( int listenfd, char config[][CONFSIZE],
                  contenttyp* type[TYPENUM] )
 {
-    SAI cliaddr;
     int len;
     pthread_t tid;
-    servinfo data;
+    servinfo *data;
 
-    len = sizeof( cliaddr );
+
     for( ; ; ){ 
-        connfd = Accept( listenfd, (SA) &cliaddr, &len ); 
+        
+        /* create a new servinfo */
+        data = (servinfo*)Malloc( sizeof(servinfo) );
+        data->config = config;
+        data->type = type;
+        len = sizeof( data->cliaddr );       
 
-        if ( pthread_create( &tid, NULL , &handlereq_th, (void*) data ) > 0 ){
+        connfd = Accept( listenfd, (SA*) &(data->cliaddr), &len ); 
+        data->connfd = connfd; 
+
+        if (pthread_create( &tid, NULL , &handlereq_th, (void*)data)> 0){
            perror("Thread error");
         }
+
     }
 
 }
@@ -999,7 +1048,6 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      {
         sigsuspend(&zero);
         
-        //Close(pip[1]); /* close write pipe */
 
         if ( sigprocmask(SIG_SETMASK, &old, NULL ) < 0 )
            err_quit("signal error");

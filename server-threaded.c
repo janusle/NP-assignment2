@@ -2,6 +2,8 @@
 #include "http.h"
 #include "confprocess.h"
 
+
+
 int 
 main( int argc, char **argv )
 {
@@ -21,15 +23,13 @@ main( int argc, char **argv )
    init_config( argv[1], config, type );
 
    signal( atoi( config[SDSIG]), sig_shutdown );
-
-   pidnum = 0; 
-   
+ 
    listenfd = init( config[ HOST ], config[ PORT ], 3 );
    
-   isSingle = 0; 
-   isThreaded = 0;
+   isSingle = 1; 
+   isThreaded = 1;
 
-   handlereqfork( listenfd, config, type );
+   handlereqthread( listenfd, config, type );
    
    return EXIT_SUCCESS;
 }

@@ -33,6 +33,7 @@ main( int argc, char **argv )
    sd->act = 1; /* It's a single process program */
     
    isSingle = 1;
+   isThreaded = 0;
 
    for( ; ; ) { 
        handlereqsgl( listenfd, config, type );

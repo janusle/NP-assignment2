@@ -1,12 +1,18 @@
 CC=gcc
-FLAG=-g #-lsocket -lnsl
-all: server-single server-forked
+FLAG=-g -lsocket -lnsl
+all: server-single server-forked server-threaded
+
+server-threaded: error.o http.o server-threaded.o confprocess.o
+	$(CC) -o server-threaded error.o http.o server-threaded.o confprocess.o $(FLAG) 
 
 server-forked: error.o http.o server-forked.o confprocess.o 
 	$(CC) -o server-forked error.o http.o server-forked.o confprocess.o $(FLAG)
 
 server-single: error.o http.o server-single.o confprocess.o
 	$(CC) -o server-single error.o http.o server-single.o confprocess.o $(FLAG)
+
+server-threaded.o:
+	$(CC) -c server-threaded.c $(FLAG)
 
 server-forked.o:
 	$(CC) -c server-forked.c $(FLAG)
@@ -27,3 +33,5 @@ clean:
 	-rm *.o
 	-rm server-single
 	-rm server-forked
+	-rm server-threaded
+	-rm core
