@@ -92,7 +92,7 @@ typedef struct{
   int connfd;
   char **config;
   contenttyp** type;
-  char **info;
+  char info[INFOLEN][TMPLEN];
   SAI cliaddr;
 } servinfo; 
 

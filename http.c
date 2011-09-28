@@ -601,8 +601,8 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
 
 
 static int
-returnstat( int connfd, char info[][TMPLEN], int actconn, long totalreq, 
-            char* port, char* sig, char*sdfile )
+returnstat( int connfd, char info[][TMPLEN], int actconn, 
+            long totalreq, char* port, char* sig, char*sdfile )
 {
   char buffer[ BUFFERLEN ], *header;
   long left, len, lenheader;
@@ -656,6 +656,7 @@ handlereq( int connfd ,
   char *header;
   int fp;  
   FILE *fd ;
+
 
   /* read request */
   siz = 0;
@@ -726,8 +727,8 @@ handlereq( int connfd ,
       /*fprintf(stderr,"%s\n", buffer);*/
 
       /*actnum = atoi( buffer ); */
-      result = returnstat( connfd , info, sd->act, sd->req, config[PORT], config[SDSIG], 
-                           config[SDFILE] );
+      result = returnstat( connfd , info, sd->act, sd->req, config[PORT],
+                           config[SDSIG],  config[SDFILE] );
       return result;
   }
 
@@ -781,12 +782,6 @@ handlereq( int connfd ,
   }
   
 
-  /*for test*/
-  /*printf("%s %s\n\n\n", info[URL], info[VERSION] );*/
-  
-  /*
-  write( 2, buffer, n );
-  */
   return result;
 }
 
@@ -802,8 +797,6 @@ sig_child( int signum )
       fprintf(stderr,"active connection is %d\n", sd->act);
    }; 
 }
-
-
 
 
 static void
@@ -839,6 +832,7 @@ sig_shutdown( int signum )
     fprintf(stderr, "Server will exit \n");
     exit(0);
 }
+
 
 
 sigfun*
@@ -908,6 +902,7 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
 }
 
 
+
 void*
 handlereq_th( void* data )
 {
@@ -915,21 +910,23 @@ handlereq_th( void* data )
   char info[INFOLEN][TMPLEN], log[ LOGLEN ], 
        cliinfo[ TMPLEN ], addr[ INET_ADDRSTRLEN ], 
        acptime[ TIMELEN ], clstime[ TIMELEN ], 
-       repinfo[ INFOSIZ ]; pthread_detach( pthread_self());
+       repinfo[ INFOSIZ ]; 
   SAI cliaddr;
   int err;
   FILE *fp;
 
+  //pthread_detach( pthread_self());
   si = (servinfo*) data;
-  si->info = info;
-
-  /* for test */
-  fprintf( stderr, "%d start\n", pthread_self() );
 
   if ( handlereq( si->connfd, si->config,
                 si->type, si->info ) == false )
+  {
      err = errno;
+  } 
 
+  fprintf( stderr, "After si is %p\n", si );
+
+  //si = (servinfo*) data;
   close( si->connfd );
   
   /* record closed time */
@@ -937,7 +934,7 @@ handlereq_th( void* data )
 
   /* record client address and port */
   inet_ntop( AF_INET, &(si->cliaddr.sin_addr), addr, INET_ADDRSTRLEN );
-  sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
+  sprintf( cliinfo, "%s %d ", addr, ntohs( si->cliaddr.sin_port ) );
 
   /* generate log */ 
   sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
@@ -955,10 +952,11 @@ handlereq_th( void* data )
        
   /* for test */
   printf("%d is done\n", pthread_self() );
-  exit(0);
-
+  
+  free(si);
   return NULL;
 }
+
 
 
 /* handle request( multithread version ) */
@@ -968,7 +966,7 @@ handlereqthread( int listenfd, char config[][CONFSIZE],
 {
     int len;
     pthread_t tid;
-    servinfo *data;
+    servinfo *data = NULL;
 
 
     for( ; ; ){ 
@@ -982,10 +980,12 @@ handlereqthread( int listenfd, char config[][CONFSIZE],
         connfd = Accept( listenfd, (SA*) &(data->cliaddr), &len ); 
         data->connfd = connfd; 
 
-        if (pthread_create( &tid, NULL , &handlereq_th, (void*)data)> 0){
+        /*
+        if (pthread_create( &tid, NULL , handlereq_th, (void*)data)> 0){
            perror("Thread error");
         }
-
+        */
+        handlereq_th( data );
     }
 
 }
