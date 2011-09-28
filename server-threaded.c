@@ -28,8 +28,13 @@ main( int argc, char **argv )
    
    isSingle = 1; 
    isThreaded = 1;
+  
+   /* set shared memroy */
+   sd = (sharedmem*)Malloc( sizeof(sharedmem) );
+   sd->pid = getpid();
+   sd->act = 0;
+   sd->req = 0;
 
-   
    handlereqthread( listenfd, config, type );
    
    return EXIT_SUCCESS;

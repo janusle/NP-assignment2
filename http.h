@@ -99,12 +99,13 @@ typedef struct{
 } servinfo; 
 
 
-int pidnum;
 int listenfd;
 int connfd;
 sharedmem *sd;
 int isSingle;
 int isThreaded;
+
+//pthread_mutex_t actmutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* for communication between parents and children */
 int pip[2];
@@ -129,6 +130,7 @@ void Close( int sockfd );
 void *Malloc( size_t size );
 
 pid_t Wait( int *stat_loc );
+
 
 /* initializing functions */
 int init( char *host, char *port, int backlog );

@@ -813,10 +813,20 @@ sig_shutdown( int signum )
 
 
     close(listenfd);
-    if( isSingle )
+
+    if( isSingle && !isThreaded )
     {
       fprintf(stderr,"Server will exit");
       exit(0);
+    }
+    
+    if( isSingle && isThreaded )
+    {
+       fprintf(stderr,"Waiting for all threads\n");
+       while( sd->act > 0 ){
+       }
+       fprintf(stderr, "All threads returned.\n");
+       exit(0);
     }
 
     if( sd->act > 0 ){ 
@@ -915,6 +925,15 @@ handlereq_th( void* data )
   FILE *fp;
 
   pthread_detach( pthread_self());
+ 
+  /* add active connection and total request */
+  /*
+  pthread_mutex_lock(&act_mutex); 
+  sd->act += 1;
+  sd->req += 1; 
+  pthread_mutex_unlock(&act_mutex);
+  */
+
   si = (servinfo*) data;
 
   if ( handlereq( si->connfd, si->config,
@@ -950,6 +969,14 @@ handlereq_th( void* data )
   printf("%d is done\n", pthread_self() );
   
   free(si);
+  
+  /* decrement active connection */
+  /*
+  pthread_mutex_lock(&act_mutex); 
+  sd->act -= 1;
+  pthread_mutex_unlock(&act_mutex);
+  */
+
   return NULL;
 }
 

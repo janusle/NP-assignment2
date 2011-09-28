@@ -22,7 +22,6 @@ main( int argc, char **argv )
 
    signal( atoi( config[SDSIG]), sig_shutdown );
 
-   pidnum = 0; 
    
    listenfd = init( config[ HOST ], config[ PORT ], 3 );
    
