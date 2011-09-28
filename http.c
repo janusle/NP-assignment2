@@ -915,7 +915,7 @@ handlereq_th( void* data )
   int err;
   FILE *fp;
 
-  //pthread_detach( pthread_self());
+  pthread_detach( pthread_self());
   si = (servinfo*) data;
 
   if ( handlereq( si->connfd, si->config,
@@ -924,9 +924,6 @@ handlereq_th( void* data )
      err = errno;
   } 
 
-  fprintf( stderr, "After si is %p\n", si );
-
-  //si = (servinfo*) data;
   close( si->connfd );
   
   /* record closed time */
@@ -980,12 +977,11 @@ handlereqthread( int listenfd, char config[][CONFSIZE],
         connfd = Accept( listenfd, (SA*) &(data->cliaddr), &len ); 
         data->connfd = connfd; 
 
-        /*
+        
         if (pthread_create( &tid, NULL , handlereq_th, (void*)data)> 0){
            perror("Thread error");
         }
-        */
-        handlereq_th( data );
+        
     }
 
 }

@@ -90,8 +90,8 @@ typedef struct{
 
 typedef struct{
   int connfd;
-  char **config;
-  contenttyp** type;
+  char (*config)[CONFSIZE];
+  contenttyp (*type)[TYPENUM];
   char info[INFOLEN][TMPLEN];
   SAI cliaddr;
 } servinfo; 
