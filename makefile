@@ -1,5 +1,5 @@
 CC=gcc
-FLAG=-g -lsocket -lnsl
+FLAG=-g #-lsocket -lnsl
 all: server-single server-forked
 
 server-forked: error.o http.o server-forked.o confprocess.o 

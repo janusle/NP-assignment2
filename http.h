@@ -70,6 +70,7 @@ To shutdown, do 'kill -%s %d' or click\
 #define MAXCLINET 100
 #define TIMEOUT 3
 
+
 typedef struct sockaddr SA;
 typedef struct sockaddr_in SAI;
 typedef struct addrinfo AR;
@@ -89,6 +90,7 @@ typedef struct{
 int pidnum;
 int listenfd;
 sharedmem *sd;
+int isSingle;
 
 /* for communication between parents and children */
 int pip[2];

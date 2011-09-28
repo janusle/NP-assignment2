@@ -820,6 +820,11 @@ sig_shutdown( int signum )
 
 
     close(listenfd);
+    if( isSingle )
+    {
+      fprintf(stderr,"Server will exit");
+      exit(0);
+    }
 
     if( sd->act > 0 ){ 
       /* for test */
