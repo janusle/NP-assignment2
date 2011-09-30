@@ -184,7 +184,7 @@ init( char *host, char *port , int backlog )
 
    Listen( listenfd, backlog );  
 
-   signal( SIGPIPE, SIG_IGN );
+   signal( SIGPIPE, sig_pipe );
 
    return listenfd;
 }
@@ -812,7 +812,9 @@ sig_shutdown( int signum )
     fprintf( stderr, "Shutdown signal was caught\n" );
 
 
-    close(listenfd);
+    //close(listenfd);
+    shutdown( listenfd , SHUT_RDWR );
+    shutdown( connfd , SHUT_RD );
 
     if( isSingle && !isThreaded )
     {
@@ -927,7 +929,7 @@ handlereq_th( void* data )
   pthread_detach( pthread_self());
 
 
-  /* add active connection and total request */
+  /* increment active connection and total request */
   
   pthread_mutex_lock(&act_mutex); 
   sd->act += 1;
