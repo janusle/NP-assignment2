@@ -104,11 +104,10 @@ int connfd;
 sharedmem *sd;
 int isSingle;
 int isThreaded;
+int ismultiplexing;
 
 pthread_mutex_t act_mutex;
 
-/* for communication between parents and children */
-int pip[2];
 
 
 /*wrapper function*/

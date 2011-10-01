@@ -2,6 +2,21 @@
 #define SERVERNAME "webserver"
 
 
+int 
+Select( int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, 
+        struct timeval *timeout )
+{
+   int result;
+
+   result = select( maxfdp1, readset, writeset, exceptset, timeout );
+   if( result < 0 ){
+      err_quit("select error");
+   }
+ 
+   return result;
+}
+
+
 void
 Write( int fildes, void* buf, size_t nbyte )
 {
@@ -862,6 +877,110 @@ signal( int signum, sigfun *fun)
 }
 
 
+void
+handlereqselect( char config[][CONFSIZE], 
+              contenttyp* type[TYPENUM] )
+{
+   /* len is size of cliadd, err is error code, maxi is max of client
+    * maxfd is max of descriptor */
+   int sock, connfd, len, ready, err, maxi, maxfd, i;
+   int client[FD_SETSIZE];
+   fd_set rset, allset;
+   SAI cliaddr;
+   char log[ LOGLEN ], cliinfo[ TMPLEN ], 
+        addr[ INET_ADDRSTRLEN ], acptime[ TIMELEN ] ,
+        clstime[ TIMELEN ], repinfo[ INFOSIZ ] ,info[INFOLEN][TMPLEN] ;
+   FILE *fp;
+
+   err = 0;
+   len = sizeof( cliaddr );
+
+   /* initializing */
+   for( i=0; i<FD_SETSIZE; i++ )
+       client[i] = -1;
+   maxi = -1;
+   maxfd = listenfd;
+   FD_ZERO( &allset );
+   FD_SET( listenfd, &allset );
+
+   /* main loop starts here */
+   for( ; ; ){
+      rset = allset;
+     
+      ready = Select(maxfd+1, &rset, NULL, NULL, NULL ); 
+
+      if( FD_ISSET( listenfd, &rset ) ){ /* new connection */
+
+         connfd = Accept( listenfd, (SA*) &cliaddr, &len );
+
+         sd->req++;
+
+         /* record accepted time */
+         strcpy( acptime, getdatetime() );
+
+         /* save new connection */
+         for( i=0; i<FD_SETSIZE; i++ )
+            if( client[i] < 0 ){
+               client[i] = connfd;
+               break;
+            }
+
+         FD_SET( connfd, &allset );
+         
+         if( connfd > maxfd )
+           maxfd = connfd;
+        
+         if( i > maxi )
+           maxi = i;
+         
+         if( --ready <= 0 )
+           continue; /* no more descriptors */
+      }
+      /* check connection descriptors */
+
+      for( i=0; i <=maxi; i++ ){
+        if( (sock = client[i]) <0 )
+          continue;
+        
+        if( FD_ISSET( sock, &rset) ){
+      
+          /* handle request , if fail to do , return */
+          if ( handlereq( sock, config, type, info) == false ) 
+            err = errno; 
+          
+          /* close connection and clear fd set */
+          close( sock );
+          FD_CLR( sock, &allset ); 
+          client[i] = -1;
+
+          /* record closed time */
+          strcpy( clstime, gettime() );
+          /* record client address and port */
+          inet_ntop( AF_INET, &cliaddr.sin_addr, addr, TMPLEN );
+          sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
+
+          /* generate log */ 
+          sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
+                   info[URL], info[STATUS], info[CONTENTLEN], err ); 
+
+          /* for test */
+          fprintf(stderr, "%s", log );
+
+          if( strcmp( config[LOGGING], "yes" ) == 0 )
+          {
+            fp = fopen( config[LOG] , "a");
+            fprintf( fp, "%s", log );
+            fclose(fp);
+          }
+
+          if( --ready <= 0 )
+            break; /* no more descriptors */
+        }
+      }
+   } 
+}
+
+
 
 /* handle request (single process version) */
 void
@@ -937,7 +1056,7 @@ handlereq_th( void* data )
   pthread_mutex_unlock(&act_mutex);
   
 
-  printf("%d start\n", pthread_self() );
+  printf("%ld start\n", (long)pthread_self() );
   si = (servinfo*) data;
 
   if ( handlereq( si->connfd, si->config,
@@ -970,7 +1089,7 @@ handlereq_th( void* data )
   }
        
   /* for test */
-  printf("%d is done\n", pthread_self() );
+  printf("%ld is done\n", (long)pthread_self() );
   
   free(si);
   
