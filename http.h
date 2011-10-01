@@ -99,6 +99,16 @@ typedef struct{
 } servinfo; 
 
 
+#define READREQ 0
+#define RESPONSE 1
+
+typedef struct{
+  int fd;
+  int state;
+  char buffer[ BUFFERLEN ];
+} clientinfo;
+
+
 int listenfd;
 int connfd;
 sharedmem *sd;

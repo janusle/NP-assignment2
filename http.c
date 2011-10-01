@@ -3,7 +3,8 @@
 
 
 int 
-Select( int maxfdp1, fd_set *readset, fd_set *writeset, fd_set *exceptset, 
+Select( int maxfdp1, fd_set *readset, 
+        fd_set *writeset, fd_set *exceptset, 
         struct timeval *timeout )
 {
    int result;
@@ -29,8 +30,10 @@ Write( int fildes, void* buf, size_t nbyte )
     if( (n = write( fildes, buf+written , left )) < 0 ){
         if( errno == EINTR )
           n = 0;
-        else if( errno == EPIPE )
-          err_quit("Pipe error");
+        else if( errno == EPIPE ){
+          fprintf(stderr,"PIPE ERROR\n");
+          return;
+        }
         else
           err_quit("Write error");
 
@@ -581,7 +584,6 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
 
    }
 
-
    /* get size of file */
    if( fp > 0 )
    {
@@ -603,7 +605,7 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
      {
        left = length;
        read( fp, buffer, length );
-       Write( connfd, buffer, length);
+       Write( connfd, buffer, length );
 
        close( fp );
      }
@@ -658,6 +660,140 @@ settimeout( int fd, int sec )
    
    return select( fd+1, &rset, NULL, NULL, &t );
 }
+
+
+
+static int
+readreq( int connfd ,char config[CONFLEN][CONFSIZE] ,
+         char buffer[ BUFFERLEN ])
+{
+  int n, code, result, siz, total, actnum;
+  FILE *fd ;
+
+  siz = 0;
+  do{
+
+    if( settimeout( connfd, TIMEOUT ) <= 0 )
+      break;
+
+    n = read( connfd, buffer+siz, BUFFERLEN );
+ 
+    if ( n == 0 )
+      break;
+
+    if( n < 0 )
+    {
+       if ( errno == EINTR )
+         continue;
+       return false;
+    }
+
+    siz += n; 
+    n = 0;
+
+    /* check if it is the end of http request */
+    if( siz >= 4 ) 
+    {
+       if( buffer[siz-2] ==  '\r' && buffer[siz-1] == '\n' &&
+         buffer[siz-4] == '\r' && buffer[siz-3] == '\n' )
+         break; 
+    } 
+
+  }
+  while(1);
+
+  buffer[siz] = '\0';
+  
+  if( strcmp( config[RECORDING], "yes" ) == 0 )
+  {
+
+     fd = fopen( config[RD], "w" );
+     fprintf(fd, "%s\n", buffer );
+     fclose(fd);
+  }
+  
+  return true;
+}
+
+
+int repon(int connfd ,
+          char config[CONFLEN][CONFSIZE] , char buffer[ BUFFERLEN ],
+          contenttyp* type[ TYPENUM ], char info[][TMPLEN])
+{
+  int fp, code, result;
+  char address[ TMPLEN ];
+
+  /* parse header */
+  code = parseheader( buffer, strlen(buffer) , config, info );
+
+  /* request status */
+  if( code == 0 && 
+      strcmp( config[STAT], info[URL]+1 ) == 0 )
+  {
+      strcpy(info[STATUS], "200");
+     
+      /*read( pip[0], buffer, TMPLEN );*/
+      /* for test */
+      /*fprintf(stderr,"%s\n", buffer);*/
+
+      /*actnum = atoi( buffer ); */
+      result = returnstat( connfd , info, sd->act, sd->req, config[PORT],
+                           config[SDSIG],  config[SDFILE] );
+      return result;
+  }
+
+  /* shutdown */
+  
+  if( code == 0 &&
+      strcmp( config[SDFILE], info[URL] ) == 0)
+  {
+     
+     result = response( connfd, SDFILE, INVALID, info,
+                        gettype(info[URL], config, type ) );
+     return result;
+  }
+  
+
+  if( code == 0 )
+  {
+     
+     strcpy( address, config[ROOT] );
+     strcat( address, info[URL] );
+     fp = open( address, O_RDONLY );
+           
+     /* 403 or 404 */
+     if( fp < 0 )
+     {
+        if( errno == EACCES )
+        {
+          strcpy(info[STATUS], "403");
+          result = response( connfd , 403, INVALID, info, 
+                             gettype(info[URL], config, type) );      
+        }
+        else
+        {
+          strcpy(info[STATUS], "404");
+          result = response( connfd, 404, INVALID, info, 
+                             gettype(info[URL], config, type) );
+        }
+     }
+     else
+     {
+       /* 200 OK */
+       strcpy(info[STATUS], "200");
+       result = response( connfd, 200, fp, info, 
+                gettype(info[URL], config, type));
+     }
+  }
+  else
+  {
+     result = response( connfd, code, INVALID, info, 
+                        gettype(info[URL], config, type) );
+  }
+  
+  return result;
+}
+
 
 
 /* handle request (general version) */
@@ -884,8 +1020,8 @@ handlereqselect( char config[][CONFSIZE],
    /* len is size of cliadd, err is error code, maxi is max of client
     * maxfd is max of descriptor */
    int sock, connfd, len, ready, err, maxi, maxfd, i;
-   int client[FD_SETSIZE];
-   fd_set rset, allset;
+   clientinfo client[FD_SETSIZE];
+   fd_set rset, wset, allset;
    SAI cliaddr;
    char log[ LOGLEN ], cliinfo[ TMPLEN ], 
         addr[ INET_ADDRSTRLEN ], acptime[ TIMELEN ] ,
@@ -897,7 +1033,7 @@ handlereqselect( char config[][CONFSIZE],
 
    /* initializing */
    for( i=0; i<FD_SETSIZE; i++ )
-       client[i] = -1;
+       client[i].fd = -1;
    maxi = -1;
    maxfd = listenfd;
    FD_ZERO( &allset );
@@ -905,23 +1041,27 @@ handlereqselect( char config[][CONFSIZE],
 
    /* main loop starts here */
    for( ; ; ){
+
       rset = allset;
-     
-      ready = Select(maxfd+1, &rset, NULL, NULL, NULL ); 
+      wset = allset;
+
+      ready = Select(maxfd+1, &rset, &wset, NULL, NULL ); 
 
       if( FD_ISSET( listenfd, &rset ) ){ /* new connection */
 
          connfd = Accept( listenfd, (SA*) &cliaddr, &len );
 
          sd->req++;
+         sd->act++;
 
          /* record accepted time */
          strcpy( acptime, getdatetime() );
 
          /* save new connection */
          for( i=0; i<FD_SETSIZE; i++ )
-            if( client[i] < 0 ){
-               client[i] = connfd;
+            if( client[i].fd < 0 ){
+               client[i].fd = connfd;
+               client[i].state = READREQ;
                break;
             }
 
@@ -936,46 +1076,77 @@ handlereqselect( char config[][CONFSIZE],
          if( --ready <= 0 )
            continue; /* no more descriptors */
       }
-      /* check connection descriptors */
-
+      
+      /* process read set */
       for( i=0; i <=maxi; i++ ){
-        if( (sock = client[i]) <0 )
+        if( (sock = client[i].fd) <0 )
           continue;
         
         if( FD_ISSET( sock, &rset) ){
       
           /* handle request , if fail to do , return */
+          /*   
           if ( handlereq( sock, config, type, info) == false ) 
             err = errno; 
+          */
+          if( readreq( sock, config, client[i].buffer ) == false ){
+              fprintf(stderr, "read error");
+              continue;
+          }
           
-          /* close connection and clear fd set */
-          close( sock );
-          FD_CLR( sock, &allset ); 
-          client[i] = -1;
+          client[i].state = RESPONSE;
+          ready--;
+        }
+      }
 
-          /* record closed time */
-          strcpy( clstime, gettime() );
-          /* record client address and port */
-          inet_ntop( AF_INET, &cliaddr.sin_addr, addr, TMPLEN );
-          sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
+      if( ready <= 0 )
+        continue;
 
-          /* generate log */ 
-          sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
+      /* process write set */
+      for( i=0; i<=maxi; i++ ){
+         if( (sock = client[i].fd) < 0 )
+            continue;
+         
+         if( client[i].state != RESPONSE )
+            continue;
+         
+         if( FD_ISSET( sock, &wset) ){
+             
+            if( repon(sock, config, client[i].buffer, type, info ) == false ){
+               fprintf(stderr, "write error");
+               continue;
+            }
+
+            /* close connection and clear fd set */
+            close( sock );
+            FD_CLR( sock, &allset ); 
+            client[i].fd = -1;
+
+            /* record closed time */
+            strcpy( clstime, gettime() );
+            /* record client address and port */
+            inet_ntop( AF_INET, &cliaddr.sin_addr, addr, TMPLEN );
+            sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
+
+            /* generate log */ 
+            sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
                    info[URL], info[STATUS], info[CONTENTLEN], err ); 
 
-          /* for test */
-          fprintf(stderr, "%s", log );
+            /* for test */
+            fprintf(stderr, "%s", log );
 
-          if( strcmp( config[LOGGING], "yes" ) == 0 )
-          {
-            fp = fopen( config[LOG] , "a");
-            fprintf( fp, "%s", log );
-            fclose(fp);
-          }
+            if( strcmp( config[LOGGING], "yes" ) == 0 )
+            {
+              fp = fopen( config[LOG] , "a");
+              fprintf( fp, "%s", log );
+              fclose(fp);
+            }
 
-          if( --ready <= 0 )
-            break; /* no more descriptors */
-        }
+            sd->act--;
+
+            if( --ready <= 0 )
+              break; /* no more descriptors */
+         } 
       }
    } 
 }
