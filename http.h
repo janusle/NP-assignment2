@@ -101,11 +101,16 @@ typedef struct{
 
 #define READREQ 0
 #define RESPONSE 1
+#define FINISH 2
+#define WRITESIZ 1000
 
 typedef struct{
   int fd;
   int state;
+  int siz;
+  int ptr;
   char buffer[ BUFFERLEN ];
+  char *wrbuf;
 } clientinfo;
 
 

@@ -12,8 +12,9 @@ Select( int maxfdp1, fd_set *readset,
    while(1){
      result = select( maxfdp1, readset, writeset, exceptset, timeout );
      if( result < 0 ){
-      if( errno == EINTR )
+      if( errno == EINTR ){
         return -1;
+      }
       else
         err_quit("select error");
      }
@@ -549,6 +550,88 @@ genheader( int code, size_t length, char* type )
 
 
 static int 
+response_select( clientinfo *cli , int code ,
+                 int fp , char info[][TMPLEN], 
+                 char* type )
+{
+   int n;
+   size_t length = 0, left;
+   char *buffer;
+   char *header; 
+
+   if( code == 404 ) {     
+     fp = open( "404.html", O_RDONLY );
+     if( fp < 0 )
+       return false;
+
+   }
+
+   if( code == 403 )
+   {     
+     fp = open( "403.html", O_RDONLY );
+     if( fp < 0 )
+     {
+        
+     }
+   }
+
+   if( code == 400 )
+   {     
+     fp = open( "400.html", O_RDONLY );
+     if( fp < 0 )
+       return false;
+
+   }
+ 
+   if( code == 501 )
+   {     
+     fp = open( "501.html", O_RDONLY );
+     if( fp < 0 )
+       return false;
+
+   }
+
+   /* get size of file */
+   if( cli->siz == 0 ){
+      length = getfilesize( fp );
+      if( length < 0 )
+      {
+         return false;
+      } 
+      /* record content-length */
+      sprintf( info[CONTENTLEN], "%ld", length );
+
+      /* header */
+      header = genheader( code, length, type );  
+      cli->wrbuf = (char*)Malloc(length + strlen(header) );
+      strcpy( cli->wrbuf, header );
+      read( fp, cli->wrbuf+strlen(header), length );
+      cli->siz = length + strlen(header);
+      close( fp );
+   }
+
+   if( cli->ptr < cli->siz ){ /* haven't finished */
+        
+        if( cli->siz - cli->ptr > WRITESIZ ){
+          Write( cli->fd , cli->wrbuf + cli->ptr, WRITESIZ );
+          cli->ptr = cli->ptr + WRITESIZ;
+        }
+        else{
+          Write( cli->fd, cli->wrbuf + cli->ptr, cli->siz-cli->ptr);
+          cli->ptr = cli->siz;
+        }
+   }
+   else{ /* finish to write */
+        cli->state = FINISH;  
+        free( cli->wrbuf );
+       }
+     
+
+   return true;
+}
+
+
+static int 
 response( int connfd ,int code, int fp , char info[][TMPLEN], 
           char* type )
 {
@@ -720,15 +803,16 @@ readreq( int connfd ,char config[CONFLEN][CONFSIZE] ,
 }
 
 
-int repon(int connfd ,
-          char config[CONFLEN][CONFSIZE] , char buffer[ BUFFERLEN ],
+int repon(clientinfo *cli, 
+          char config[CONFLEN][CONFSIZE] , 
           contenttyp* type[ TYPENUM ], char info[][TMPLEN])
 {
   int fp, code, result;
   char address[ TMPLEN ];
 
+
   /* parse header */
-  code = parseheader( buffer, strlen(buffer) , config, info );
+  code = parseheader( cli->buffer, strlen(cli->buffer) , config, info );
 
   /* request status */
   if( code == 0 && 
@@ -736,18 +820,13 @@ int repon(int connfd ,
   {
       strcpy(info[STATUS], "200");
      
-      /*read( pip[0], buffer, TMPLEN );*/
-      /* for test */
-      /*fprintf(stderr,"%s\n", buffer);*/
-
-      /*actnum = atoi( buffer ); */
-      result = returnstat( connfd , info, sd->act, sd->req, config[PORT],
+      result = returnstat( cli->fd , info, sd->act, sd->req, config[PORT],
                            config[SDSIG],  config[SDFILE] );
+      cli->state = FINISH;
       return result;
   }
 
-  /* shutdown */
-  
+  /* shutdown */  
   if( code == 0 &&
       strcmp( config[SDFILE], info[URL] ) == 0)
   {
@@ -771,30 +850,34 @@ int repon(int connfd ,
         if( errno == EACCES )
         {
           strcpy(info[STATUS], "403");
-          result = response( connfd , 403, INVALID, info, 
+          result = response_select( cli, 403, INVALID, info, 
                              gettype(info[URL], config, type) );      
+
         }
         else
         {
           strcpy(info[STATUS], "404");
-          result = response( connfd, 404, INVALID, info, 
+          result = response_select( cli, 404, INVALID, info, 
                              gettype(info[URL], config, type) );
+
         }
      }
      else
      {
        /* 200 OK */
        strcpy(info[STATUS], "200");
-       result = response( connfd, 200, fp, info, 
+       result = response_select( cli, 200, fp, info, 
                 gettype(info[URL], config, type));
+
      }
   }
   else
   {
-     result = response( connfd, code, INVALID, info, 
+     result = response_select( cli, code, INVALID, info, 
                         gettype(info[URL], config, type) );
   }
-  
+
+
   return result;
 }
 
@@ -1085,6 +1168,8 @@ handlereqselect( char config[][CONFSIZE],
             if( client[i].fd < 0 ){
                client[i].fd = connfd;
                client[i].state = READREQ;
+               client[i].ptr = 0;
+               client[i].siz = 0;
                break;
             }
 
@@ -1099,12 +1184,16 @@ handlereqselect( char config[][CONFSIZE],
          if( --ready <= 0 )
            continue; /* no more descriptors */
       }
-      
+     
+
       /* process read set */
       for( i=0; i <=maxi; i++ ){
         if( (sock = client[i].fd) <0 )
           continue;
         
+        if( client[i].state != READREQ )
+          continue;
+
         if( FD_ISSET( sock, &rset) ){
       
           /* handle request , if fail to do , return */
@@ -1129,16 +1218,33 @@ handlereqselect( char config[][CONFSIZE],
       for( i=0; i<=maxi; i++ ){
          if( (sock = client[i].fd) < 0 )
             continue;
-         
-         if( client[i].state != RESPONSE )
+        
+         if( client[i].state == READREQ )
             continue;
          
+
          if( FD_ISSET( sock, &wset) ){
-             
-            if( repon(sock, config, client[i].buffer, type, info ) == false ){
-               fprintf(stderr, "write error");
-               continue;
+            
+            if( client[i].siz == 0 ){
+
+              if( repon(&client[i], config, type, info ) == false ){
+                 fprintf(stderr, "write error\n");
+                 client[i].state = FINISH;
+                 continue;
+              }
             }
+            else{
+
+              if ( response_select( &client[i], 200, -1, info, NULL ) == false ){
+                 client[i].state = FINISH;
+                 continue;
+              }
+
+            }
+
+            /* write is not finished */
+            if( client[i].state != FINISH )
+              continue;
 
             /* close connection and clear fd set */
             close( sock );
