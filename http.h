@@ -109,7 +109,9 @@ typedef struct{
   int state;
   int siz;
   int ptr;
+  char info [INFOLEN][TMPLEN];
   char buffer[ BUFFERLEN ];
+  char log[ LOGLEN ];
   char *wrbuf;
 } clientinfo;
 

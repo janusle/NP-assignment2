@@ -600,6 +600,7 @@ response_select( clientinfo *cli , int code ,
       } 
       /* record content-length */
       sprintf( info[CONTENTLEN], "%ld", length );
+      strcpy(cli->info[CONTENTLEN], info[CONTENTLEN]);
 
       /* header */
       header = genheader( code, length, type );  
@@ -798,7 +799,7 @@ readreq( int connfd ,char config[CONFLEN][CONFSIZE] ,
      fprintf(fd, "%s\n", buffer );
      fclose(fd);
   }
-  
+
   return true;
 }
 
@@ -814,12 +815,17 @@ int repon(clientinfo *cli,
   /* parse header */
   code = parseheader( cli->buffer, strlen(cli->buffer) , config, info );
 
+  strcpy(cli->info[URL], info[URL]);
+  strcpy(cli->info[VERSION], info[VERSION] );
+
   /* request status */
   if( code == 0 && 
       strcmp( config[STAT], info[URL]+1 ) == 0 )
   {
       strcpy(info[STATUS], "200");
      
+      strcpy(cli->info[STATUS], info[STATUS]);
+
       result = returnstat( cli->fd , info, sd->act, sd->req, config[PORT],
                            config[SDSIG],  config[SDFILE] );
       cli->state = FINISH;
@@ -850,6 +856,8 @@ int repon(clientinfo *cli,
         if( errno == EACCES )
         {
           strcpy(info[STATUS], "403");
+          strcpy(cli->info[STATUS], info[STATUS]);
+          
           result = response_select( cli, 403, INVALID, info, 
                              gettype(info[URL], config, type) );      
 
@@ -857,6 +865,8 @@ int repon(clientinfo *cli,
         else
         {
           strcpy(info[STATUS], "404");
+          strcpy(cli->info[STATUS], info[STATUS]);
+
           result = response_select( cli, 404, INVALID, info, 
                              gettype(info[URL], config, type) );
 
@@ -866,6 +876,8 @@ int repon(clientinfo *cli,
      {
        /* 200 OK */
        strcpy(info[STATUS], "200");
+       strcpy(cli->info[STATUS], info[STATUS]);
+
        result = response_select( cli, 200, fp, info, 
                 gettype(info[URL], config, type));
 
@@ -873,6 +885,8 @@ int repon(clientinfo *cli,
   }
   else
   {
+
+     strcpy(cli->info[STATUS], info[STATUS]);
      result = response_select( cli, code, INVALID, info, 
                         gettype(info[URL], config, type) );
   }
@@ -934,16 +948,6 @@ handlereq( int connfd ,
   
   if( strcmp( config[RECORDING], "yes" ) == 0 )
   {
-     /*
-     fp = open( config[RD], O_WRONLY | O_CREAT | O_TRUNC,
-                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
-     if( fp < 0 )
-     {
-        
-     write( 2, buffer, n);
-     write( fp, buffer, n );
-     close(fp);
-     */
 
      fd = fopen( config[RD], "w" );
      fprintf(fd, "%s\n", buffer );
@@ -1160,9 +1164,7 @@ handlereqselect( char config[][CONFSIZE],
          sd->req++;
          sd->act++;
 
-         /* record accepted time */
          strcpy( acptime, getdatetime() );
-
          /* save new connection */
          for( i=0; i<FD_SETSIZE; i++ )
             if( client[i].fd < 0 ){
@@ -1170,6 +1172,9 @@ handlereqselect( char config[][CONFSIZE],
                client[i].state = READREQ;
                client[i].ptr = 0;
                client[i].siz = 0;
+               
+               /* record accepted time */
+               strcpy( client[i].log, getdatetime() );
                break;
             }
 
@@ -1253,14 +1258,19 @@ handlereqselect( char config[][CONFSIZE],
 
             /* record closed time */
             strcpy( clstime, gettime() );
+           // strcat( client[i].log, gettime() );
+
             /* record client address and port */
             inet_ntop( AF_INET, &cliaddr.sin_addr, addr, TMPLEN );
             sprintf( cliinfo, "%s %d ", addr, ntohs( cliaddr.sin_port ) );
 
             /* generate log */ 
+            
             sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
-                   info[URL], info[STATUS], info[CONTENTLEN], err ); 
-
+                   client[i].info[URL], client[i].info[STATUS], 
+                   client[i].info[CONTENTLEN], err ); 
+            
+            
             /* for test */
             fprintf(stderr, "%s", log );
 
