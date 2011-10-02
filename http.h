@@ -115,6 +115,7 @@ sharedmem *sd;
 int isSingle;
 int isThreaded;
 int ismultiplexing;
+int shutflag;
 
 pthread_mutex_t act_mutex;
 

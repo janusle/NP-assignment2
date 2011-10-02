@@ -9,12 +9,16 @@ Select( int maxfdp1, fd_set *readset,
 {
    int result;
 
-   result = select( maxfdp1, readset, writeset, exceptset, timeout );
-   if( result < 0 ){
-      err_quit("select error");
+   while(1){
+     result = select( maxfdp1, readset, writeset, exceptset, timeout );
+     if( result < 0 ){
+      if( errno == EINTR )
+        return -1;
+      else
+        err_quit("select error");
+     }
+     return result;
    }
- 
-   return result;
 }
 
 
@@ -967,6 +971,11 @@ sig_shutdown( int signum )
     shutdown( listenfd , SHUT_RDWR );
     shutdown( connfd , SHUT_RD );
 
+    if( ismultiplexing ){
+       shutflag = true; 
+       return;
+    }
+
     if( isSingle && !isThreaded )
     {
       fprintf(stderr,"Server will exit");
@@ -1042,13 +1051,27 @@ handlereqselect( char config[][CONFSIZE],
    /* main loop starts here */
    for( ; ; ){
 
+      /* check if shutdown signal was caught and active connection is zero */
+      if( shutflag == true && 
+          sd->act == 0 )
+         return;
+
       rset = allset;
       wset = allset;
 
       ready = Select(maxfd+1, &rset, &wset, NULL, NULL ); 
 
-      if( FD_ISSET( listenfd, &rset ) ){ /* new connection */
+      if( ready == -1 ){
+          if( shutflag == true && sd->act > 0 )
+            continue;
+          else
+            return;
+      }
+        
 
+      if( shutflag == false && FD_ISSET( listenfd, &rset ) ){ 
+         
+         /* new connection */
          connfd = Accept( listenfd, (SA*) &cliaddr, &len );
 
          sd->req++;

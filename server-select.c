@@ -32,13 +32,12 @@ main( int argc, char **argv )
    sd->req = 0;
    sd->act = 0; 
     
-   isSingle = 1;
-   isThreaded = 0;
-   ismultiplexing = 1;
+   isSingle = true;
+   isThreaded = false;
+   ismultiplexing = true;
+   shutflag = false;
 
-   for( ; ; ) { 
-       handlereqselect( config, type );
-   }
+   handlereqselect( config, type );
    
    return EXIT_SUCCESS;
 }
