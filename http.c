@@ -1242,6 +1242,7 @@ handlereqselect( char config[][CONFSIZE],
          sd->act++;
 
          strcpy( acptime, getdatetime() );
+         
          /* save new connection */
          for( i=0; i<FD_SETSIZE; i++ )
             if( client[i].fd < 0 ){
@@ -1442,7 +1443,7 @@ handlereq_th( void* data )
   pthread_mutex_unlock(&act_mutex);
   
 
-  sprintf( log, " thread %ld start\n", (long)pthread_self() );
+  sprintf( log, "%s thread %ld start\n", getdatetime(), (long)pthread_self() );
 
   fprintf(stderr, log );
   
@@ -1481,7 +1482,7 @@ handlereq_th( void* data )
      fclose(fp);
   }
        
-  sprintf( log, " thread %ld is done\n", (long)pthread_self() );
+  sprintf( log, "%s thread %ld is done\n", getdatetime(), (long)pthread_self() );
 
   fprintf(stderr, log );
   

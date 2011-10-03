@@ -2,10 +2,11 @@
 #include "http.h"
 #include "confprocess.h"
 
+#define SERVERNAME " server-select start\n"
+
 int 
 main( int argc, char **argv )
 {
-   char config[ CONFLEN ][ CONFSIZE ];
    contenttyp* type[ TYPENUM ];
 
    if( argc < 2 )
@@ -34,6 +35,12 @@ main( int argc, char **argv )
    isThreaded = false;
    ismultiplexing = true;
    shutflag = false;
+
+   /* logging */
+   if( strcmp( config[LOGGING], "yes" ) == 0  ){
+      dolog_withtime( config[LOG], SERVERNAME );
+      dolog_withtime( config[LOG], " initialization complete\n" );
+   }
 
    handlereqselect( config, type );
    

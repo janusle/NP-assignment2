@@ -54,6 +54,8 @@ clean:
 	-rm gethttp-tx
 	-rm gethttp-rx
 	-rm *.dat
+	-rm *.jpg
+	-rm *.png
 	-rm *.log
 	-rm *.txt
 	-rm core
