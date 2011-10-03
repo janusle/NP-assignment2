@@ -38,6 +38,15 @@ printflog_withtime( char* filename, char* format, char* time, int pid )
 }
 
 
+void
+printflogth_withtime( char* filename, char* format, int threadid )
+{
+   char st[ LOGLEN ];
+   sprintf( st, format, threadid );
+   dolog( filename, st );
+}
+
+
 int 
 Select( int maxfdp1, fd_set *readset, 
         fd_set *writeset, fd_set *exceptset, 
@@ -1433,7 +1442,15 @@ handlereq_th( void* data )
   pthread_mutex_unlock(&act_mutex);
   
 
-  printf("%ld start\n", (long)pthread_self() );
+  sprintf( log, " thread %ld start\n", (long)pthread_self() );
+
+  fprintf(stderr, log );
+  
+  /* logging */
+  if( strcmp( config[LOGGING], "yes" ) == 0 ){
+     dolog_withtime( config[LOG], log ); 
+  }
+
   si = (servinfo*) data;
 
   if ( handlereq( si->connfd, si->config,
@@ -1455,7 +1472,6 @@ handlereq_th( void* data )
   sprintf( log, "%s %s %s %s %s %s %d\n", si->acptime, clstime, cliinfo, 
            si->info[URL], si->info[STATUS], si->info[CONTENTLEN], err ); 
 
-  /* for test */
   fprintf(stderr, "%s", log );
 
   if( strcmp( si->config[LOGGING], "yes" ) == 0 )
@@ -1465,8 +1481,15 @@ handlereq_th( void* data )
      fclose(fp);
   }
        
-  /* for test */
-  printf("%ld is done\n", (long)pthread_self() );
+  sprintf( log, " thread %ld is done\n", (long)pthread_self() );
+
+  fprintf(stderr, log );
+  
+  /* logging */
+  if( strcmp( config[LOGGING], "yes" ) == 0 ){
+     dolog_withtime( config[LOG], log ); 
+  }
+
   
   free(si);
   
@@ -1582,7 +1605,8 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
 
         /* logging */
         if( strcmp( config[LOGGING], "yes") == 0 ){
-          printflog_withtime( config[LOG], "%s child %d start\n", getdatetime(), getpid() );
+          printflog_withtime( config[LOG], "%s child %d start\n", 
+                              getdatetime(), getpid() );
         }
 
         /* handle request , if fail to do , set errno:w */

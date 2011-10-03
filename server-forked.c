@@ -2,7 +2,7 @@
 #include "http.h"
 #include "confprocess.h"
 
-#define SERVERNAME "server-forked\n"
+#define SERVERNAME " server-forked\n"
 
 int 
 main( int argc, char **argv )

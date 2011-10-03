@@ -2,12 +2,11 @@
 #include "http.h"
 #include "confprocess.h"
 
-
+#define SERVERNAME " server-threaded\n"
 
 int 
 main( int argc, char **argv )
 {
-   char config[ CONFLEN ][ CONFSIZE ];
    contenttyp* type[ TYPENUM ];
 
    if( argc < 2 )
@@ -35,6 +34,12 @@ main( int argc, char **argv )
    sd->pid = getpid();
    sd->act = 0;
    sd->req = 0;
+
+   /* logging */
+   if( strcmp( config[LOGGING], "yes" ) == 0 ){
+      dolog_withtime( config[LOG], SERVERNAME );
+      dolog_withtime( config[LOG], " initialization complete\n");
+   }
 
    handlereqthread( listenfd, config, type );
    
