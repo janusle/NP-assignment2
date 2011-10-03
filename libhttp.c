@@ -159,7 +159,6 @@ readbyte( int fd )
 
   if( n == 0 )
   {
-      printf("n=0\n");
       end = true;
       return EOF;
   }

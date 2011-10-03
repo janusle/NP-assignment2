@@ -694,7 +694,6 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
        left = length;
        read( fp, buffer, length );
        Write( connfd, buffer, length );
-
        close( fp );
      }
      
@@ -799,6 +798,7 @@ readreq( int connfd ,char config[CONFLEN][CONFSIZE] ,
 
   return true;
 }
+
 
 
 int repon(clientinfo *cli, 
@@ -968,11 +968,6 @@ handlereq( int connfd ,
   {
       strcpy(info[STATUS], "200");
      
-      /*read( pip[0], buffer, TMPLEN );*/
-      /* for test */
-      /*fprintf(stderr,"%s\n", buffer);*/
-
-      /*actnum = atoi( buffer ); */
       result = returnstat( connfd , info, sd->act, sd->req, config[PORT],
                            config[SDSIG],  config[SDFILE] );
       return result;

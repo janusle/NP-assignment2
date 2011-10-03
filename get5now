@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if test ${#} = 1
+then
+  ./gethttp-slow ${1}/test1.dat test1.dat &
+  ./gethttp-slow ${1}/test2.dat test2.dat &
+  ./gethttp-slow ${1}/test3.dat test3.dat &
+  ./gethttp-slow ${1}/test4.dat test4.dat &
+  ./gethttp-slow ${1}/test5.dat test5.dat &
+  wait
+  echo "Done - check file contents"
+else
+  echo "Starts 5 copies of slow-gethhtp, fetching test1.dat - test5.dat"
+  echo "usage: get5now web-server-url"
+  echo "  e.g. get5now goanna.cs.rmit.edu.au:54321"
+fi
+
+

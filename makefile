@@ -1,9 +1,9 @@
 CC=gcc
 FLAG=-g -lsocket -lnsl #-pthread #-Wall
-all: server-single server-forked server-threaded server-select slow-gettp
+all: server-single server-forked server-threaded server-select gethttp-slow
 
-slow-gettp: libhttp.o error.o gethttp.o
-	$(CC) -o gethttp gethttp.o error.o libhttp.o $(FLAG)
+gethttp-slow: libhttp.o error.o gethttp.o
+	$(CC) -o gethttp-slow gethttp.o error.o libhttp.o $(FLAG)
 
 server-select: error.o http.o server-select.o confprocess.o
 	$(CC) -o server-select error.o http.o server-select.o confprocess.o $(FLAG) 
@@ -50,7 +50,8 @@ clean:
 	-rm server-forked
 	-rm server-threaded
 	-rm server-select
-	-rm gethttp
+	-rm gethttp-slow
 	-rm gethttp-tx
 	-rm gethttp-rx
+	-rm *.dat
 	-rm core
