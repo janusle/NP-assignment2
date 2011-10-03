@@ -1,5 +1,5 @@
 CC=gcc
-FLAG=-g #-lsocket -lnsl -pthread #-Wall
+FLAG=-g -lsocket -lnsl #-pthread #-Wall
 all: server-single server-forked server-threaded server-select
 
 server-select: error.o http.o server-select.o confprocess.o

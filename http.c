@@ -719,10 +719,7 @@ returnstat( int connfd, char info[][TMPLEN], int actconn,
 
   /* record CONTENTLEN */
   sprintf( info[CONTENTLEN], "%ld", len );
-  /*
-  lenheader = strlen( header );
-  */
-
+  
   /* send header */
   header = genheader( 200, len, "text/html" ); 
 
@@ -836,10 +833,15 @@ int repon(clientinfo *cli,
   if( code == 0 &&
       strcmp( config[SDFILE], info[URL] ) == 0)
   {
-     
-     result = response( connfd, SDFILE, INVALID, info,
-                        gettype(info[URL], config, type ) );
-     return result;
+    kill( sd->pid, atoi(config[SDSIG]) );    
+
+    strcpy( info[STATUS], "200" );
+    strcpy( cli->info[STATUS], info[STATUS] );
+    strcpy( info[CONTENTLEN], "0" );
+    strcpy( cli->info[CONTENTLEN], info[CONTENTLEN] );
+
+    cli->state = FINISH;
+    return true;
   }
   
 
@@ -980,9 +982,12 @@ handlereq( int connfd ,
       strcmp( config[SDFILE], info[URL] ) == 0)
   {
      
-     result = response( connfd, SDFILE, INVALID, info,
-                        gettype(info[URL], config, type ) );
-     return result;
+    kill( sd->pid, atoi(config[SDSIG]) );    
+
+    strcpy( info[STATUS], "200" );
+    strcpy( info[CONTENTLEN], "0" );
+
+    return true;
   }
   
 
@@ -1258,7 +1263,7 @@ handlereqselect( char config[][CONFSIZE],
 
             /* record closed time */
             strcpy( clstime, gettime() );
-           // strcat( client[i].log, gettime() );
+            //strcat( client[i].log, gettime() );
 
             /* record client address and port */
             inet_ntop( AF_INET, &cliaddr.sin_addr, addr, TMPLEN );

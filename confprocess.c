@@ -166,7 +166,8 @@ init_config( char* filename , char config[][CONFSIZE],
 
       if( strcmp( "shutdown-file" , tmp[OPTION] ) == 0 )
       {
-        strcpy( config[SDFILE], tmp[VALUE] );
+        strcpy( config[SDFILE], "/" );
+        strcat( config[SDFILE], tmp[VALUE] );
       }
  
       if( strcmp( "status-request" , tmp[OPTION] ) == 0 )
