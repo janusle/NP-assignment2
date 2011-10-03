@@ -595,13 +595,20 @@ response_select( clientinfo *cli , int code ,
                  int fp , char info[][TMPLEN], 
                  char* type )
 {
-   size_t length = 0;
+   size_t length;
    char *header; 
 
+   length = 0;
    if( code == 404 ) {     
      fp = open( "404.html", O_RDONLY );
-     if( fp < 0 )
-       return false;
+     if( fp < 0 ){
+        header = genheader( code, length, type );  
+        Write( cli->fd, header, strlen(header) ); 
+        sprintf( info[CONTENTLEN], "%zu", length );
+        strcpy( cli->info[CONTENTLEN], info[CONTENTLEN] );
+        cli->state = FINISH;  
+        return true;
+     }
 
    }
 
@@ -609,24 +616,41 @@ response_select( clientinfo *cli , int code ,
    {     
      fp = open( "403.html", O_RDONLY );
      if( fp < 0 )
-     {
-        
+     { 
+        header = genheader( code, length, type );  
+        Write( cli->fd, header, strlen(header) ); 
+        sprintf( info[CONTENTLEN], "%zu", length );
+        strcpy( cli->info[CONTENTLEN], info[CONTENTLEN] );
+        cli->state = FINISH;  
+        return true;
      }
    }
 
    if( code == 400 )
    {     
      fp = open( "400.html", O_RDONLY );
-     if( fp < 0 )
-       return false;
+     if( fp < 0 ){
+        header = genheader( code, length, type );  
+        Write( cli->fd, header, strlen(header) ); 
+        sprintf( info[CONTENTLEN], "%zu", length );
+        strcpy( cli->info[CONTENTLEN], info[CONTENTLEN] );
+        cli->state = FINISH;  
+        return true;
+     }
 
    }
  
    if( code == 501 )
    {     
      fp = open( "501.html", O_RDONLY );
-     if( fp < 0 )
-       return false;
+     if( fp < 0 ){
+        header = genheader( code, length, type );  
+        Write( cli->fd, header, strlen(header) ); 
+        sprintf( info[CONTENTLEN], "%zu", length );
+        strcpy( cli->info[CONTENTLEN], info[CONTENTLEN] );
+        cli->state = FINISH;  
+        return true;
+     }
 
    }
 
@@ -675,13 +699,19 @@ static int
 response( int connfd ,int code, int fp , char info[][TMPLEN], 
           char* type )
 {
-   size_t length = 0, left;
+   size_t length, left;
    char *buffer;
    char *header; 
+
+   length = 0;
    if( code == 404 ) {     
      fp = open( "404.html", O_RDONLY );
-     if( fp < 0 )
-       return false;
+     if( fp < 0 ){ 
+        header = genheader( code, length, type );  
+        Write( connfd, header, strlen(header) ); 
+        sprintf( info[CONTENTLEN], "%zu", length );
+        return true;
+     }
 
    }
 
@@ -689,8 +719,11 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
    {     
      fp = open( "403.html", O_RDONLY );
      if( fp < 0 )
-     {
-        
+     {         
+        header = genheader( code, length, type );  
+        Write( connfd, header, strlen(header) ); 
+        sprintf( info[CONTENTLEN], "%zu", length );
+        return true;
      }
    }
 
@@ -698,16 +731,24 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
    {     
      fp = open( "400.html", O_RDONLY );
      if( fp < 0 )
-       return false;
-
+     {
+        header = genheader( code, length, type );  
+        Write( connfd, header, strlen(header) ); 
+        sprintf( info[CONTENTLEN], "%zu", length );
+        return true;
+     }
    }
  
    if( code == 501 )
    {     
      fp = open( "501.html", O_RDONLY );
      if( fp < 0 )
-       return false;
-
+     { 
+        header = genheader( code, length, type );  
+        Write( connfd, header, strlen(header) ); 
+        sprintf( info[CONTENTLEN], "%zu", length );
+        return true;
+     }
    }
 
    /* get size of file */
