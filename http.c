@@ -825,6 +825,8 @@ int repon(clientinfo *cli,
 
       result = returnstat( cli->fd , info, sd->act, sd->req, config[PORT],
                            config[SDSIG],  config[SDFILE] );
+
+      strcpy( cli->info[CONTENTLEN], info[CONTENTLEN] );
       cli->state = FINISH;
       return result;
   }

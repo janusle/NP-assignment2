@@ -10,8 +10,14 @@ err_quit(char *errmsg)
   exit(EXIT_FAILURE);
 }
 
+void
+usage_get()
+{
+  fprintf(stderr, "Usage: gethttp URL filename\n");
+}
+
 void 
 usage()
 {
-  fprintf(stderr, "Usage:  configfile\n"); 
+  fprintf(stderr, "Usage: server configfile\n"); 
 }
