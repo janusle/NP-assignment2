@@ -215,10 +215,9 @@ Request( int httpfd, const char *path , const char *host)
 int 
 request( int httpfd, const char *path , const char *host)
 {
-  int n, i;
+  int i;
   char req[MAX_REQLEN]; 
   unsigned int sent;
-  FILE *fd;
 
   sprintf( req, "GET %s HTTP/1.1\r\nHost: %s\r\n\r\n", 
            path, host);

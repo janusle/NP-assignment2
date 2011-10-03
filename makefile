@@ -1,5 +1,5 @@
 CC=gcc
-FLAG=-g -lsocket -lnsl #-pthread #-Wall
+FLAG=-g -lsocket -lnsl -Wall -w -pedantic#-pthread #-Wall
 all: server-single server-forked server-threaded server-select gethttp-slow
 
 gethttp-slow: libhttp.o error.o gethttp.o
@@ -27,7 +27,7 @@ server-select.o:
 	$(CC) -c server-select.c $(FLAG)
 
 server-threaded.o:
-	$(CC) -c server-threaded.c $(FLAG)
+	$(CC) -c server-threaded.c $(FLAG) -pthread
 
 server-forked.o:
 	$(CC) -c server-forked.c $(FLAG)

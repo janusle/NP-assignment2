@@ -534,7 +534,7 @@ genheader( int code, size_t length, char* type )
     sprintf( tmp, "Content-Type: %s\r\n", type );
     strcat( header, tmp );
 
-    sprintf( tmp, "Content-Length: %ld\r\n", length );
+    sprintf( tmp, "Content-Length: %zu\r\n", length );
     strcat( header, tmp);
 
     strcat( header, "Server: myserver\r\n" );
@@ -554,9 +554,7 @@ response_select( clientinfo *cli , int code ,
                  int fp , char info[][TMPLEN], 
                  char* type )
 {
-   int n;
-   size_t length = 0, left;
-   char *buffer;
+   size_t length = 0;
    char *header; 
 
    if( code == 404 ) {     
@@ -599,7 +597,7 @@ response_select( clientinfo *cli , int code ,
          return false;
       } 
       /* record content-length */
-      sprintf( info[CONTENTLEN], "%ld", length );
+      sprintf( info[CONTENTLEN], "%zu", length );
       strcpy(cli->info[CONTENTLEN], info[CONTENTLEN]);
 
       /* header */
@@ -636,7 +634,6 @@ static int
 response( int connfd ,int code, int fp , char info[][TMPLEN], 
           char* type )
 {
-   int n;
    size_t length = 0, left;
    char *buffer;
    char *header; 
@@ -682,7 +679,7 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
      buffer = (char*)Malloc(length);
 
      /* record content-length */
-     sprintf( info[CONTENTLEN], "%ld", length );
+     sprintf( info[CONTENTLEN], "%zu", length );
 
      /* send header */
      header = genheader( code, length, type );  
@@ -709,10 +706,10 @@ returnstat( int connfd, char info[][TMPLEN], int actconn,
             long totalreq, char* port, char* sig, char*sdfile )
 {
   char buffer[ BUFFERLEN ], *header;
-  long left, len, lenheader;
+  long len;
 
   sprintf( buffer, STATPAGE, getrptime(), actconn, totalreq, 
-           port, sig, sd->pid, sdfile );
+           port, sig, (long long int)sd->pid, sdfile );
 
   len = strlen(buffer);
 
@@ -751,7 +748,7 @@ static int
 readreq( int connfd ,char config[CONFLEN][CONFSIZE] ,
          char buffer[ BUFFERLEN ])
 {
-  int n, code, result, siz, total, actnum;
+  int n, siz;
   FILE *fd ;
 
   siz = 0;
@@ -907,9 +904,8 @@ handlereq( int connfd ,
            char config[CONFLEN][CONFSIZE] , 
            contenttyp* type[ TYPENUM ], char info[][TMPLEN] )
 {
-  int n, code, result, siz, total, actnum;
+  int n, code, result, siz;
   char buffer[ BUFFERLEN ], address[ TMPLEN ];
-  char *header;
   int fp;  
   FILE *fd ;
 
@@ -1051,7 +1047,6 @@ sig_user1( int signum )
 void
 sig_shutdown( int signum )
 { 
-    pid_t pid;
 
     fprintf( stderr, "Shutdown signal was caught\n" );
 

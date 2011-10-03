@@ -65,7 +65,7 @@ Status at %s <br/><br/>\
 Active connections: %d <br/>\
 Total requests: %ld <br/>\
 Listening port: %s <br/><br/>\
-To shutdown, do 'kill -%s %d' or click\
+To shutdown, do 'kill -%s %lld' or click\
 <a href=%s>here</a>"
 
 
@@ -159,6 +159,11 @@ void handlereqsgl(int listenfd,
 int handlereq( int connfd, char config[][CONFSIZE], 
                 contenttyp* type[ TYPENUM ], char info [][TMPLEN] );
 
+void handlereqfork( int listenfd, char config[][CONFSIZE], contenttyp* type[TYPENUM] );
+
+void handlereqthread( int listenfd, char config[][CONFSIZE], contenttyp* type[TYPENUM] );
+
+void handlereqselect( char config[][CONFSIZE], contenttyp* type[TYPENUM] );
 
 /* signal */
 sigfun* signal( int signum, sigfun *fun );

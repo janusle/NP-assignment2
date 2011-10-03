@@ -7,8 +7,6 @@
 int 
 main( int argc, char **argv )
 {
-   SAI cliaddr;
-   int len, i; 
    char config[ CONFLEN ][ CONFSIZE ];
    contenttyp* type[ TYPENUM ];
 
