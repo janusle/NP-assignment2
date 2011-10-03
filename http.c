@@ -2,6 +2,42 @@
 #define SERVERNAME "webserver"
 
 
+
+void 
+dolog( char* filename, char *log )
+{
+    FILE* fp;
+    fp = fopen( filename, "a" );
+    if( fp == NULL )
+     err_quit("Log error");
+
+    fprintf(fp, "%s", log );
+    fclose(fp); 
+}
+
+
+void
+dolog_withtime( char* filename, char* log )
+{
+   char st[ LOGLEN ];
+
+   strcpy( st, getdatetime() );
+   strcat( st , log );
+   dolog( filename, st );
+
+}
+
+
+void 
+printflog_withtime( char* filename, char* format, char* time, int pid )
+{
+   char st[ LOGLEN ];
+
+   sprintf( st, format, time, pid );
+   dolog( filename, st );
+}
+
+
 int 
 Select( int maxfdp1, fd_set *readset, 
         fd_set *writeset, fd_set *exceptset, 
@@ -213,7 +249,7 @@ init( char *host, char *port , int backlog )
 }
 
 
-static char*
+char*
 getdatetime()
 {
    static char str[TIMELEN];  
@@ -226,7 +262,7 @@ getdatetime()
 }
 
 
-static char*
+char*
 gettime()
 {
    static char str[TIMELEN];  
@@ -540,10 +576,6 @@ genheader( int code, size_t length, char* type )
     strcat( header, "Server: myserver\r\n" );
     
     strcat( header, "\r\n" );
-    
-
-    /* for test */
-    /*fprintf(stdout, "%s\n", header);*/
     
     return header; 
 }
@@ -1034,7 +1066,6 @@ sig_child( int signum )
    while( (waitpid( -1, NULL, WNOHANG) > 0 ) ){
       //pidnum--;  
       (sd->act)--;
-      fprintf(stderr,"active connection is %d\n", sd->act);
    }; 
 }
 
@@ -1050,42 +1081,82 @@ sig_shutdown( int signum )
 
     fprintf( stderr, "Shutdown signal was caught\n" );
 
+    if( strcmp( config[LOGGING], "yes") == 0 ){
+       dolog_withtime( config[LOG], " shutdown signal was caught\n");
+    }
 
-    //close(listenfd);
     shutdown( listenfd , SHUT_RDWR );
     shutdown( connfd , SHUT_RD );
 
+    /* if server is multiplexed */
     if( ismultiplexing ){
        shutflag = true; 
        return;
     }
 
+    /* if server is single */
     if( isSingle && !isThreaded )
     {
-      fprintf(stderr,"Server will exit");
+      fprintf(stderr,"Server will exit\n");
+
+       /* logging */
+       if( strcmp( config[LOGGING], "yes") == 0 ){
+         dolog_withtime( config[LOG], " terminating server\n");
+       }
       exit(0);
     }
-    
+   
+    /* if server is threaded */
     if( isSingle && isThreaded )
     {
        fprintf(stderr,"Waiting for all threads\n");
+       
+       /* logging */
+       if( strcmp( config[LOGGING], "yes") == 0 ){
+          dolog_withtime( config[LOG], " waiting for all threads\n");
+       }
+
        while( sd->act > 0 ){
        }
        fprintf(stderr, "All threads returned.\n");
+      
+       /* logging */
+       if( strcmp( config[LOGGING], "yes") == 0 ){
+          dolog_withtime( config[LOG], " all threads returned.\n");
+       }
        exit(0);
     }
-
+    
+    /* if server is forked */
     if( sd->act > 0 ){ 
-      /* for test */
-      fprintf(stderr,"Waiting for all childs\n");
+      
+      fprintf(stderr,"Waiting for all children\n");
+
+      /* logging */
+      if( strcmp( config[LOGGING], "yes") == 0 ){
+          dolog_withtime( config[LOG], " waiting for all children.\n");
+      }
+
       while( sd->act > 0  )
       {
         /* wait sd->act becoming 0 */
       }; 
+
       fprintf(stderr, "All child processes returned.\n");
+
+      /* logging */
+      if( strcmp( config[LOGGING], "yes") == 0 ){
+          dolog_withtime( config[LOG], " all child processes returned.\n");
+      }
     }
 
     fprintf(stderr, "Server will exit \n");
+
+    /* logging */
+    if( strcmp( config[LOGGING], "yes") == 0 ){
+          dolog_withtime( config[LOG], " terminating server.\n");
+    }
+
     exit(0);
 }
 
@@ -1327,7 +1398,6 @@ handlereqsgl( int listenfd, char config[][CONFSIZE],
    sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
             info[URL], info[STATUS], info[CONTENTLEN], err ); 
 
-   /* for test */
    fprintf(stderr, "%s", log );
 
    if( strcmp( config[LOGGING], "yes" ) == 0 )
@@ -1508,7 +1578,13 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
         if ( sigprocmask(SIG_SETMASK, &old, NULL ) < 0 )
            err_quit("signal error");
 
-        fprintf(stderr, "%d start\n", getpid() );
+        fprintf(stderr, "%s child %d start\n", getdatetime(), getpid() );
+
+        /* logging */
+        if( strcmp( config[LOGGING], "yes") == 0 ){
+          printflog_withtime( config[LOG], "%s child %d start\n", getdatetime(), getpid() );
+        }
+
         /* handle request , if fail to do , set errno:w */
         if ( handlereq( connfd , config, type, info) == false ) 
           err = errno; 
@@ -1526,7 +1602,6 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
         sprintf( log, "%s %s %s %s %s %s %d\n", acptime, clstime, cliinfo, 
             info[URL], info[STATUS], info[CONTENTLEN], err ); 
 
-        /* for test */
         fprintf(stderr, "%s", log );
 
         if( strcmp( config[LOGGING], "yes" ) == 0 )
@@ -1536,9 +1611,13 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
           fclose(fp);
         }
       
-     
-        /* for test */
-        printf("%d is done\n", getpid() );
+        if( strcmp( config[LOGGING], "yes") == 0 ){
+          printflog_withtime( config[LOG], "%s child %d is done\n", getdatetime(), getpid() );
+        }
+        
+        
+        sprintf(log, "%s Child %d is done\n", getdatetime(), getpid() );
+        fprintf(stderr, log );
         exit(0);
      }
     
@@ -1548,8 +1627,6 @@ handlereqfork( int listenfd, char config[][CONFSIZE],
      /*pidnum++;*/
      (sd->act)++;
      
-     /* for test */
-     fprintf(stderr, "%d is recorded active connection is %d\n", pid, sd->act );
 
      kill( pid, SIGUSR1 ); /* tell child to start */
    }

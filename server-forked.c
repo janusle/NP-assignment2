@@ -2,10 +2,11 @@
 #include "http.h"
 #include "confprocess.h"
 
+#define SERVERNAME "server-forked\n"
+
 int 
 main( int argc, char **argv )
 {
-   char config[ CONFLEN ][ CONFSIZE ];
    contenttyp* type[ TYPENUM ];
 
    if( argc < 2 )
@@ -23,8 +24,15 @@ main( int argc, char **argv )
    
    listenfd = init( config[ HOST ], config[ PORT ], 3 );
    
-   isSingle = 0; 
-   isThreaded = 0;
+   isSingle = false; 
+   isThreaded = false;
+   ismultiplexing = false;
+
+   /* logging */
+   if( strcmp( config[LOGGING], "yes" ) == 0 ){
+      dolog_withtime( config[LOG], SERVERNAME );
+      dolog_withtime( config[LOG], " initialization complete\n");
+   }
 
    handlereqfork( listenfd, config, type );
    

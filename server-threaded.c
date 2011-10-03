@@ -24,8 +24,10 @@ main( int argc, char **argv )
  
    listenfd = init( config[ HOST ], config[ PORT ], 3 );
    
-   isSingle = 1; 
-   isThreaded = 1;
+   isSingle = true; 
+   isThreaded = true;
+   ismultiplexing = false;
+
    pthread_mutex_init(&act_mutex, NULL);
 
    /* set shared memroy */

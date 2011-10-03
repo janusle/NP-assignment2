@@ -2,11 +2,12 @@
 #include "http.h"
 #include "confprocess.h"
 
+#define SERVERNAME " server-single start\n"
+
 int 
 main( int argc, char **argv )
 {
    int listenfd; 
-   char config[ CONFLEN ][ CONFSIZE ];
    contenttyp* type[ TYPENUM ];
 
    if( argc < 2 )
@@ -31,8 +32,15 @@ main( int argc, char **argv )
    sd->req = 0;
    sd->act = 1; /* It's a single process program */
     
-   isSingle = 1;
-   isThreaded = 0;
+   isSingle = true;
+   isThreaded = false;
+   ismultiplexing = false;
+  
+   /* logging */
+   if( strcmp( config[LOGGING], "yes" )==0 ){
+     dolog_withtime( config[LOG], SERVERNAME );
+     dolog_withtime( config[LOG], " initialization complete\n" );
+   }
 
    for( ; ; ) { 
        handlereqsgl( listenfd, config, type );
