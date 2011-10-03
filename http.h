@@ -125,7 +125,6 @@ typedef struct{
 
 
 int listenfd;
-int connfd;
 /* pointer to shared memory */
 sharedmem *sd;
 /* is server single, threaded or multiplexing */

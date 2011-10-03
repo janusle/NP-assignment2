@@ -89,7 +89,6 @@ Write( int fildes, void* buf, size_t nbyte )
 
     }
     
-    /*fprintf(stderr, " n is %ld errno is %d\n", n, errno );*/
     written += n;
     left = nbyte-written; 
   }
@@ -759,7 +758,7 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
        return false;
      
      buffer = (char*)Malloc(length);
-
+     bzero( buffer, length );
      /* record content-length */
      sprintf( info[CONTENTLEN], "%zu", length );
 
@@ -1136,7 +1135,7 @@ sig_shutdown( int signum )
     }
 
     shutdown( listenfd , SHUT_RDWR );
-    shutdown( connfd , SHUT_RD );
+    /*shutdown( connfd , SHUT_RD );*/
 
     /* if server is multiplexed */
     if( ismultiplexing ){
@@ -1320,11 +1319,6 @@ handlereqselect( char config[][CONFSIZE],
 
         if( FD_ISSET( sock, &rset) ){
       
-          /* handle request , if fail to do , return */
-          /*   
-          if ( handlereq( sock, config, type, info) == false ) 
-            err = errno; 
-          */
           if( readreq( sock, config, client[i].buffer ) == false ){
               fprintf(stderr, "read error");
               continue;
@@ -1377,7 +1371,6 @@ handlereqselect( char config[][CONFSIZE],
 
             /* record closed time */
             strcpy( clstime, gettime() );
-            //strcat( client[i].log, gettime() );
 
             /* record client address and port */
             inet_ntop( AF_INET, &cliaddr.sin_addr, addr, TMPLEN );
@@ -1390,7 +1383,6 @@ handlereqselect( char config[][CONFSIZE],
                    client[i].info[CONTENTLEN], err ); 
             
             
-            /* for test */
             fprintf(stderr, "%s", log );
 
             if( strcmp( config[LOGGING], "yes" ) == 0 )
@@ -1552,7 +1544,7 @@ void
 handlereqthread( int listenfd, char config[][CONFSIZE],
                  contenttyp* type[TYPENUM] )
 {
-    int len;
+    int len, connfd;
     pthread_t tid;
     servinfo *data = NULL;
     char acptime[ TIMELEN ];
@@ -1588,7 +1580,7 @@ void
 handlereqfork( int listenfd, char config[][CONFSIZE], 
               contenttyp* type[TYPENUM] )
 {
-   int len, n, err, shmid;
+   int len, n, err, shmid, connfd;
    SAI cliaddr;
    pid_t pid;
    char log[ LOGLEN ], cliinfo[ TMPLEN ], 
