@@ -53,6 +53,7 @@ clean:
 	-rm gethttp-slow
 	-rm gethttp-tx
 	-rm gethttp-rx
+	-rm *.mp3
 	-rm *.dat
 	-rm *.jpg
 	-rm *.png

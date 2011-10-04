@@ -131,7 +131,7 @@ Malloc( size_t size )
   void* space;
 
   space = malloc( size );
-
+  bzero( space, size );
   if( space == NULL )
     err_quit("PNAME");
 
@@ -352,7 +352,8 @@ parseheader( char* buf, int size , char config[][CONFSIZE],
 
    /* get http method */
    tmp = (char*)Malloc( METHODLEN * sizeof( char ) ); 
-      
+   bzero( tmp, METHODLEN * sizeof(char) ); 
+
    for( i=0, j=0; i<len && !isspace(line[i]); i++, j++ )
      tmp[j] = line[i];
    tmp[j] = '\0';
@@ -750,13 +751,16 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
      }
    }
 
+   
    /* get size of file */
    if( fp > 0 )
    {
      length = getfilesize( fp );
-     if( length < 0 )
+     if( length < 0 ){
+       fprintf(stderr, "Fail to get file size\n");
        return false;
-     
+     }
+
      buffer = (char*)Malloc(length);
      bzero( buffer, length );
      /* record content-length */
@@ -1465,11 +1469,12 @@ handlereq_th( void* data )
   int err;
   FILE *fp;
 
-  pthread_detach( pthread_self());
-
+  if ( pthread_detach( pthread_self()) != 0 ){
+    err_quit("Thread detach"); 
+  }
 
   /* increment active connection and total request */
-  
+ 
   pthread_mutex_lock(&act_mutex); 
   sd->act += 1;
   sd->req += 1; 
@@ -1553,6 +1558,7 @@ handlereqthread( int listenfd, char config[][CONFSIZE],
         
         /* create a new servinfo */
         data = (servinfo*)Malloc( sizeof(servinfo) );
+        bzero( data, sizeof(servinfo) );
         data->config = config;
         data->type = type;
 
