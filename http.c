@@ -982,6 +982,50 @@ int repon(clientinfo *cli,
 }
 
 
+/* replace all %20 to space */
+static void
+cleanadd( char* address )
+{
+   char *tmp, *ptr, *current, *end;
+   int len;
+   
+   if( (ptr = strstr( address , "%20" )) == NULL )
+   {
+     /* no %20 found */
+     return;
+   }
+
+   len = strlen(address);
+   tmp = (char*)Malloc( len );
+   bzero( tmp, len );
+   tmp[0] = '\0';
+
+   current = address;
+   end = address + len;
+   while( ptr != NULL ){  
+     strncat(tmp, current, ptr-current);  
+     strcat(tmp, " ");
+
+     /* check if it is the end of string, 3 is length of '%20' */
+     if( ptr + 3 == end ){
+       break;
+     }
+
+     current = ptr+3;/*current points to the first character after %20*/
+     ptr = strstr( current, "%20" );
+
+   }
+   
+   if( ptr == NULL )
+     strcat( tmp, current );/* copy reset of string */
+   else
+     strcat( tmp, " " ); /* the last character is space */
+
+   strcpy( address, tmp );
+   free( tmp );
+}
+
+
 
 /* handle request (general version) */
 int
@@ -1074,6 +1118,8 @@ handlereq( int connfd ,
      
      strcpy( address, config[ROOT] );
      strcat( address, info[URL] );
+     cleanadd( address );
+
      fp = open( address, O_RDONLY );
            
      /* 403 or 404 */
@@ -1083,13 +1129,13 @@ handlereq( int connfd ,
         {
           strcpy(info[STATUS], "403");
           result = response( connfd , 403, INVALID, info, 
-                             gettype(info[URL], config, type) );      
+                             config[DEFAULT] );      
         }
         else
         {
           strcpy(info[STATUS], "404");
           result = response( connfd, 404, INVALID, info, 
-                             gettype(info[URL], config, type) );
+                             config[DEFAULT] );
         }
      }
      else
