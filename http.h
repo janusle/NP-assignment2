@@ -181,15 +181,19 @@ sigfun* signal( int signum, sigfun *fun );
 
 void sig_shutdown( int signum );
 
-/* log */
+/* log related functions*/
 void dolog( char* filename, char *log );
 
 void dolog_withtime( char* filename, char*log );
 
 void printflog_withtime( char* filename, char* format, char* time, int pid );
-/* time */
+
+/* time related functions*/
 char* getdatetime();
 
 char* gettime();
+
+/* replace all '%20' in the address to space */
+void cleanadd( char* address );
 
 #endif

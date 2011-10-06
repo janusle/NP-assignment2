@@ -786,6 +786,7 @@ response( int connfd ,int code, int fp , char info[][TMPLEN],
 }
 
 
+
 static int
 returnstat( int connfd, char info[][TMPLEN], int actconn, 
             long totalreq, char* port, char* sig, char*sdfile )
@@ -934,6 +935,8 @@ int repon(clientinfo *cli,
      
      strcpy( address, config[ROOT] );
      strcat( address, info[URL] );
+     cleanadd( address );
+
      fp = open( address, O_RDONLY );
            
      /* 403 or 404 */
@@ -945,7 +948,7 @@ int repon(clientinfo *cli,
           strcpy(cli->info[STATUS], info[STATUS]);
           
           result = response_select( cli, 403, INVALID, info, 
-                             gettype(info[URL], config, type) );      
+                                    config[DEFAULT] );      
 
         }
         else
@@ -954,7 +957,7 @@ int repon(clientinfo *cli,
           strcpy(cli->info[STATUS], info[STATUS]);
 
           result = response_select( cli, 404, INVALID, info, 
-                             gettype(info[URL], config, type) );
+                                    config[DEFAULT] );
 
         }
      }
@@ -983,7 +986,7 @@ int repon(clientinfo *cli,
 
 
 /* replace all %20 to space */
-static void
+void
 cleanadd( char* address )
 {
    char *tmp, *ptr, *current, *end;
