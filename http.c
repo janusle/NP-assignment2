@@ -1218,6 +1218,7 @@ sig_shutdown( int signum )
           dolog_withtime( config[LOG], " waiting for all threads\n");
        }
 
+       /* waiting all threads */
        while( sd->act > 0 ){
        }
        fprintf(stderr, "All threads returned.\n");
@@ -1239,6 +1240,7 @@ sig_shutdown( int signum )
           dolog_withtime( config[LOG], " waiting for all children.\n");
       }
 
+      /* waiting for all processes */
       while( sd->act > 0  )
       {
         /* wait sd->act becoming 0 */
